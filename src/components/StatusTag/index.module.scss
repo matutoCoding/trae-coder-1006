@@ -1,0 +1,10 @@
+@use '@/styles/variables.scss' as *;
+
+.statusTag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  line-height: 1.4;
+  white-space: nowrap;
+}
