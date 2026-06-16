@@ -28,8 +28,8 @@ const initialInventory: InventoryBatch[] = [
     batchNo: '20240510-TM-C2',
     herbType: '天麻',
     totalQty: 1500,
-    availableQty: 1200,
-    reservedQty: 300,
+    availableQty: 1300,
+    reservedQty: 200,
     unit: 'kg',
     quality: 'excellent',
     warehouseDate: '2024-05-15',
@@ -41,15 +41,15 @@ const initialInventory: InventoryBatch[] = [
     id: 'inv-2',
     batchNo: '20240710-TP-C1',
     herbType: '铁皮石斛',
-    totalQty: 200,
-    availableQty: 50,
+    totalQty: 100,
+    availableQty: 100,
     reservedQty: 0,
     unit: 'kg',
     quality: 'excellent',
     warehouseDate: '2024-07-15',
     fieldId: '5',
     fieldName: 'C1号地块',
-    status: 'low_stock',
+    status: 'in_stock',
   },
 ]
 
@@ -109,6 +109,8 @@ interface AppState {
 
   getFieldById: (id: string) => FieldInfo | undefined
   getSeedlingById: (id: string) => SeedlingInfo | undefined
+  getSeedlingByFieldId: (fieldId: string) => SeedlingInfo | undefined
+  getSeedlingByHerbType: (herbType: string) => SeedlingInfo | undefined
   getFarmRecordById: (id: string) => FarmRecord | undefined
   getPestRecordById: (id: string) => PestRecord | undefined
   getHarvestRecordById: (id: string) => HarvestRecord | undefined
@@ -213,9 +215,44 @@ export const useAppStore = create<AppState>()(
         pestRecords: state.pestRecords.filter(r => r.id !== id)
       })),
 
-      addHarvestRecord: (record) => set((state) => ({
-        harvestRecords: [{ ...record, id: generateId() }, ...state.harvestRecords]
-      })),
+      addHarvestRecord: (record) => {
+        const state = get()
+        const newId = generateId()
+        const newRecord = { ...record, id: newId }
+
+        if (record.yield > 0 && (record.processingStatus === 'finished' || record.processingStatus === 'sliced')) {
+          const existingInv = state.inventoryBatches.find(i => i.batchNo === record.batchNo)
+          if (!existingInv) {
+            const fieldInfo = state.fields.find(f => f.id === record.fieldId)
+            const newInventory: Omit<InventoryBatch, 'id' | 'status'> = {
+              batchNo: record.batchNo,
+              herbType: record.herbType,
+              totalQty: record.yield,
+              availableQty: record.yield,
+              reservedQty: 0,
+              unit: record.unit,
+              quality: record.quality,
+              warehouseDate: record.harvestDate,
+              fieldId: record.fieldId,
+              fieldName: fieldInfo?.name || record.fieldName || '',
+              remark: '采收加工自动入库'
+            }
+            set({
+              harvestRecords: [newRecord, ...state.harvestRecords],
+              inventoryBatches: [{
+                ...newInventory,
+                id: generateId(),
+                status: calcInventoryStatus(newInventory.availableQty, newInventory.totalQty)
+              }, ...state.inventoryBatches]
+            })
+            return
+          }
+        }
+
+        set({
+          harvestRecords: [newRecord, ...state.harvestRecords]
+        })
+      },
       updateHarvestRecord: (id, record) => set((state) => ({
         harvestRecords: state.harvestRecords.map(r => r.id === id ? { ...r, ...record } : r)
       })),
@@ -316,19 +353,28 @@ export const useAppStore = create<AppState>()(
           })
         }
 
-        if (status === 'completed' && order.batchNo && order.status === 'shipped') {
+        if (status === 'completed' && order.batchNo && (order.status === 'shipped' || order.status === 'producing')) {
           const stateAfter = get()
-          set({
-            inventoryBatches: stateAfter.inventoryBatches.map(i =>
-              i.batchNo === order.batchNo
-                ? {
-                    ...i,
-                    reservedQty: Math.max(0, i.reservedQty - order.quantity),
-                    status: calcInventoryStatus(i.availableQty, i.totalQty)
-                  }
-                : i
-            )
-          })
+          const inv = stateAfter.inventoryBatches.find(i => i.batchNo === order.batchNo)
+          if (inv) {
+            const fromReserve = Math.min(order.quantity, inv.reservedQty)
+            const fromAvailable = order.quantity - fromReserve
+            const newTotal = inv.totalQty - order.quantity
+            const newAvailable = inv.availableQty - fromAvailable
+            set({
+              inventoryBatches: stateAfter.inventoryBatches.map(i =>
+                i.batchNo === order.batchNo
+                  ? {
+                      ...i,
+                      totalQty: newTotal,
+                      availableQty: newAvailable,
+                      reservedQty: inv.reservedQty - fromReserve,
+                      status: calcInventoryStatus(newAvailable, newTotal)
+                    }
+                  : i
+              )
+            })
+          }
 
           const stateAfterInv = get()
           const saleId = `sale-${order.id}`
@@ -453,6 +499,8 @@ export const useAppStore = create<AppState>()(
 
       getFieldById: (id) => get().fields.find(f => f.id === id),
       getSeedlingById: (id) => get().seedlings.find(s => s.id === id),
+      getSeedlingByFieldId: (fieldId) => get().seedlings.find(s => s.fieldId === fieldId),
+      getSeedlingByHerbType: (herbType) => get().seedlings.find(s => s.herbType === herbType),
       getFarmRecordById: (id) => get().farmRecords.find(r => r.id === id),
       getPestRecordById: (id) => get().pestRecords.find(r => r.id === id),
       getHarvestRecordById: (id) => get().harvestRecords.find(r => r.id === id),

@@ -17,9 +17,9 @@ const QualityDetailPage: React.FC = () => {
   const getOrdersByBatchNo = useAppStore(state => state.getOrdersByBatchNo)
   const getInventoryByBatchNo = useAppStore(state => state.getInventoryByBatchNo)
   const getFieldById = useAppStore(state => state.getFieldById)
+  const getSeedlingByFieldId = useAppStore(state => state.getSeedlingByFieldId)
   const farmRecords = useAppStore(state => state.farmRecords)
   const pestRecords = useAppStore(state => state.pestRecords)
-  const seedlings = useAppStore(state => state.seedlings)
 
   const [test, setTest] = useState<QualityTest | null>(null)
 
@@ -40,6 +40,7 @@ const QualityDetailPage: React.FC = () => {
     const relatedOrders = getOrdersByBatchNo(test.batchNo)
     const inventory = getInventoryByBatchNo(test.batchNo)
     const fieldInfo = harvestRecord ? getFieldById(harvestRecord.fieldId) : undefined
+    const seedlingInfo = harvestRecord ? getSeedlingByFieldId(harvestRecord.fieldId) : undefined
 
     const fieldFarmRecords = harvestRecord
       ? farmRecords.filter(r => r.fieldId === harvestRecord.fieldId)
@@ -54,10 +55,11 @@ const QualityDetailPage: React.FC = () => {
       relatedOrders,
       inventory,
       fieldInfo,
+      seedlingInfo,
       fieldFarmRecords,
       fieldPestRecords,
     }
-  }, [test, getHarvestByBatchNo, getProcessingByBatchNo, getOrdersByBatchNo, getInventoryByBatchNo, getFieldById, farmRecords, pestRecords])
+  }, [test, getHarvestByBatchNo, getProcessingByBatchNo, getOrdersByBatchNo, getInventoryByBatchNo, getFieldById, getSeedlingByFieldId, farmRecords, pestRecords])
 
   if (!test) {
     return (
@@ -77,6 +79,7 @@ const QualityDetailPage: React.FC = () => {
 
   const harvest = batchData?.harvestRecord
   const field = batchData?.fieldInfo
+  const seedling = batchData?.seedlingInfo
   const processingList = batchData?.processingRecords || []
   const orders = batchData?.relatedOrders || []
   const inventory = batchData?.inventory
@@ -86,11 +89,11 @@ const QualityDetailPage: React.FC = () => {
   const traceSteps = [
     {
       title: '种苗培育',
-      time: seedlings.length > 0 ? `${seedlings[0].nurseryDate} 育苗` : '',
-      desc: seedlings.length > 0
-        ? `${seedlings[0].name}，品种：${seedlings[0].variety}，来源：${seedlings[0].source}`
+      time: seedling ? `${seedling.nurseryDate} 育苗` : '',
+      desc: seedling
+        ? `${seedling.name}，品种：${seedling.variety}，来源：${seedling.source}`
         : '暂无种苗记录',
-      done: seedlings.length > 0
+      done: !!seedling
     },
     {
       title: '种植管理',

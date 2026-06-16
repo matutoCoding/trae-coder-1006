@@ -3,7 +3,7 @@ import { QualityTest, StatItem } from '@/types'
 export const qualityTestList: QualityTest[] = [
   {
     id: '1',
-    batchNo: 'B20240510001',
+    batchNo: '20240510-TM-C2',
     herbType: '天麻',
     testDate: '2024-05-12',
     overallResult: 'pass',
@@ -24,9 +24,9 @@ export const qualityTestList: QualityTest[] = [
   },
   {
     id: '2',
-    batchNo: 'B20240615002',
+    batchNo: '20240710-TP-C1',
     herbType: '铁皮石斛',
-    testDate: '2024-06-18',
+    testDate: '2024-07-12',
     overallResult: 'pass',
     tester: '李检验员',
     remark: '多糖含量高，品质优良',
@@ -45,7 +45,7 @@ export const qualityTestList: QualityTest[] = [
   },
   {
     id: '3',
-    batchNo: 'B20240620003',
+    batchNo: '20240920-HJ-B1',
     herbType: '黄精',
     testDate: '2024-06-22',
     overallResult: 'pending',
@@ -66,7 +66,7 @@ export const qualityTestList: QualityTest[] = [
   },
   {
     id: '4',
-    batchNo: 'B20240420004',
+    batchNo: '20240815-RS-A1',
     herbType: '人参',
     testDate: '2024-04-25',
     overallResult: 'pass',
@@ -97,7 +97,7 @@ export const qualityStats: StatItem[] = [
 export const traceabilityList = [
   {
     id: '1',
-    batchNo: 'B20240510001',
+    batchNo: '20240510-TM-C2',
     herbType: '天麻',
     qrCode: '',
     traceInfo: {
@@ -111,7 +111,7 @@ export const traceabilityList = [
   },
   {
     id: '2',
-    batchNo: 'B20240615002',
+    batchNo: '20240710-TP-C1',
     herbType: '铁皮石斛',
     qrCode: '',
     traceInfo: {

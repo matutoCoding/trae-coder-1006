@@ -36,9 +36,34 @@ const IndexPage: React.FC = () => {
   const qualityTests = useAppStore(state => state.qualityTests)
   const orders = useAppStore(state => state.orders)
   const inventoryBatches = useAppStore(state => state.inventoryBatches)
+  const harvestRecords = useAppStore(state => state.harvestRecords)
 
   const todoList = useMemo<TodoItem[]>(() => {
     const todos: TodoItem[] = []
+
+    const pendingHarvest = harvestRecords.filter(h => h.processingStatus !== 'finished' && h.processingStatus !== 'sliced' && h.yield > 0)
+    pendingHarvest.forEach(h => {
+      todos.push({
+        id: `harvest-${h.id}`,
+        icon: '🌻',
+        title: '采收待加工',
+        desc: `${h.herbType} 批次 ${h.batchNo}，产量 ${h.yield}${h.unit}`,
+        type: 'info',
+        route: '/pages/harvest/index'
+      })
+    })
+
+    const rawHarvest = harvestRecords.filter(h => h.yield === 0)
+    rawHarvest.forEach(h => {
+      todos.push({
+        id: `rawharvest-${h.id}`,
+        icon: '🌱',
+        title: '临近采收期',
+        desc: `${h.herbType} ${h.fieldName}，预计 ${h.harvestDate} 采收`,
+        type: 'warning',
+        route: '/pages/harvest/index'
+      })
+    })
 
     const pendingTests = qualityTests.filter(t => t.overallResult === 'pending')
     pendingTests.forEach(t => {
@@ -84,12 +109,12 @@ const IndexPage: React.FC = () => {
         title: b.status === 'out_of_stock' ? '库存已售罄' : '库存偏低',
         desc: `${b.herbType} 批次 ${b.batchNo} 仅剩 ${b.availableQty}${b.unit}`,
         type: b.status === 'out_of_stock' ? 'danger' : 'warning',
-        route: `/pages/inventory/index`
+        route: '/pages/inventory/index'
       })
     })
 
-    return todos.slice(0, 6)
-  }, [qualityTests, orders, inventoryBatches])
+    return todos.slice(0, 8)
+  }, [qualityTests, orders, inventoryBatches, harvestRecords])
 
   const handleModuleClick = (key: string, isTab: boolean) => {
     const routeMap: Record<string, string> = {

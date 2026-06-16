@@ -97,7 +97,7 @@ export const harvestStats: StatItem[] = [
 export const processingList = [
   {
     id: '1',
-    batchNo: 'P20240510001',
+    batchNo: '20240510-TM-C2',
     herbType: '天麻',
     processType: '蒸煮',
     startTime: '2024-05-12 08:00',
@@ -109,7 +109,7 @@ export const processingList = [
   },
   {
     id: '2',
-    batchNo: 'P20240615002',
+    batchNo: '20240710-TP-C1',
     herbType: '铁皮石斛',
     processType: '切片',
     startTime: '2024-06-15 09:00',
@@ -121,7 +121,7 @@ export const processingList = [
   },
   {
     id: '3',
-    batchNo: 'P20240620003',
+    batchNo: '20240920-HJ-B1',
     herbType: '黄精',
     processType: '晾晒',
     startTime: '2024-06-20 07:00',

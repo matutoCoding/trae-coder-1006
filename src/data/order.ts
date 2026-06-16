@@ -28,7 +28,7 @@ export const orderList: OrderInfo[] = [
     orderDate: '2024-06-05',
     deliveryDate: '2024-06-20',
     status: 'shipped',
-    batchNo: 'B20240510001',
+    batchNo: '20240510-TM-C2',
     remark: '特级精选'
   },
   {
@@ -41,9 +41,9 @@ export const orderList: OrderInfo[] = [
     price: 880,
     amount: 88000,
     orderDate: '2024-05-28',
-    deliveryDate: '2024-06-25',
+    deliveryDate: '2024-07-05',
     status: 'completed',
-    batchNo: 'B20240615002',
+    batchNo: '20240710-TP-C1',
     remark: '铁皮枫斗加工成品'
   },
   {
@@ -72,8 +72,8 @@ export const orderList: OrderInfo[] = [
     amount: 36000,
     orderDate: '2024-06-18',
     deliveryDate: '2024-10-15',
-    status: 'producing',
-    batchNo: 'B20240620003',
+    status: 'pending',
+    batchNo: '',
     remark: '制黄精，九蒸九晒'
   },
   {
@@ -94,12 +94,11 @@ export const orderList: OrderInfo[] = [
 ]
 
 export const salesRecordList: SalesRecord[] = [
-  { id: '1', date: '2024-06-05', herbType: '天麻', quantity: 200, unit: 'kg', amount: 56000, customer: '同仁堂药业', batchNo: 'B20240510001' },
-  { id: '2', date: '2024-05-28', herbType: '铁皮石斛', quantity: 100, unit: 'kg', amount: 88000, customer: '康美药业', batchNo: 'B20240615002' },
-  { id: '3', date: '2024-05-15', herbType: '白术', quantity: 500, unit: 'kg', amount: 45000, customer: '九州通医药', batchNo: 'B20240420005' },
-  { id: '4', date: '2024-04-20', herbType: '三七', quantity: 300, unit: 'kg', amount: 96000, customer: '云南白药集团', batchNo: 'B20240410006' },
-  { id: '5', date: '2024-04-10', herbType: '黄精', quantity: 150, unit: 'kg', amount: 18000, customer: '北京同仁堂', batchNo: 'B20240320007' },
-  { id: '6', date: '2024-03-25', herbType: '当归', quantity: 400, unit: 'kg', amount: 38000, customer: '汇仁药业', batchNo: 'B20240310008' }
+  { id: 'sale-3', date: '2024-07-05', herbType: '铁皮石斛', quantity: 100, unit: 'kg', amount: 88000, customer: '康美药业', batchNo: '20240710-TP-C1' },
+  { id: 'sale-old-1', date: '2024-05-15', herbType: '白术', quantity: 500, unit: 'kg', amount: 45000, customer: '九州通医药', batchNo: '20240420-BZ-B2' },
+  { id: 'sale-old-2', date: '2024-04-20', herbType: '三七', quantity: 300, unit: 'kg', amount: 96000, customer: '云南白药集团', batchNo: '20240410-SQ-A3' },
+  { id: 'sale-old-3', date: '2024-04-10', herbType: '黄精', quantity: 150, unit: 'kg', amount: 18000, customer: '北京同仁堂', batchNo: '20240320-HJ-B1' },
+  { id: 'sale-old-4', date: '2024-03-25', herbType: '当归', quantity: 400, unit: 'kg', amount: 38000, customer: '汇仁药业', batchNo: '20240310-DG-D1' }
 ]
 
 export const orderStats: StatItem[] = [

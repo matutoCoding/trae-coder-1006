@@ -15,9 +15,12 @@ export interface SeedlingInfo {
   id: string
   name: string
   variety: string
+  herbType: string
   source: string
   quantity: number
   nurseryDate: string
+  fieldId?: string
+  fieldName?: string
   status: 'nursery' | 'transplanted' | 'available'
   quality: 'excellent' | 'good' | 'normal'
 }
