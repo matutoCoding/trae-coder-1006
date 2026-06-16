@@ -37,11 +37,7 @@ const QualityPage: React.FC = () => {
   }
 
   const handleAdd = () => {
-    if (activeTab === 'test') {
-      Taro.navigateTo({ url: '/pages/quality-form/index?mode=add' })
-    } else {
-      Taro.showToast({ title: '新增溯源批次', icon: 'none' })
-    }
+    Taro.navigateTo({ url: '/pages/quality-form/index?mode=add' })
   }
 
   const handleTestClick = (test: QualityTest) => {

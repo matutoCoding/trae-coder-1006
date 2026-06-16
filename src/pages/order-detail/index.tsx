@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
@@ -20,10 +20,20 @@ const OrderDetailPage: React.FC = () => {
 
   const getOrderById = useAppStore(state => state.getOrderById)
   const updateOrderStatus = useAppStore(state => state.updateOrderStatus)
-  const getQualityTestById = useAppStore(state => state.getQualityTestById)
-  const qualityTests = useAppStore(state => state.qualityTests)
+  const getInventoryByBatchNo = useAppStore(state => state.getInventoryByBatchNo)
+  const getQualityTestByBatchNo = useAppStore(state => state.getQualityTestByBatchNo)
 
   const [order, setOrder] = useState<OrderInfo | null>(null)
+
+  const inventory = useMemo(() => {
+    if (!order?.batchNo) return null
+    return getInventoryByBatchNo(order.batchNo)
+  }, [order, getInventoryByBatchNo])
+
+  const qualityTest = useMemo(() => {
+    if (!order?.batchNo) return null
+    return getQualityTestByBatchNo(order.batchNo)
+  }, [order, getQualityTestByBatchNo])
 
   useEffect(() => {
     if (id) {
@@ -49,34 +59,63 @@ const OrderDetailPage: React.FC = () => {
     if (nextIndex >= 0 && nextIndex < statusFlow.length - 1) {
       const nextStatus = statusFlow[nextIndex + 1].key as OrderInfo['status']
 
-      let confirmText = {
-        producing: '确认开始生产？',
-        shipped: '确认已发货？',
-        completed: '确认订单完成？完成后将同步到产销台账',
+      if (nextStatus === 'producing' && order.batchNo) {
+        const inv = getInventoryByBatchNo(order.batchNo)
+        if (!inv) {
+          Taro.showToast({ title: '该批次暂无库存', icon: 'none' })
+          return
+        }
+        if (inv.availableQty < order.quantity) {
+          Taro.showModal({
+            title: '库存不足',
+            content: `批次 ${order.batchNo} 可售数量仅 ${inv.availableQty}${inv.unit}，订单需要 ${order.quantity}${order.unit}，是否继续？`,
+            confirmText: '继续占用',
+            success: (res) => {
+              if (res.confirm) {
+                doUpdateStatus(nextStatus)
+              }
+            }
+          })
+          return
+        }
       }
 
-      const confirmMsg = confirmText[nextStatus as keyof typeof confirmText] || '确认更新状态？'
+      const confirmTextMap: Record<string, string> = {
+        producing: '确认开始生产？将占用对应批次库存。',
+        shipped: '确认已发货？',
+        completed: '确认订单完成？完成后将同步到产销台账并扣减库存。',
+      }
+
+      const confirmMsg = confirmTextMap[nextStatus as keyof typeof confirmTextMap] || '确认更新状态？'
 
       Taro.showModal({
         title: '状态更新',
         content: confirmMsg,
         success: (res) => {
           if (res.confirm) {
-            updateOrderStatus(id, nextStatus)
-            const updated = getOrderById(id)
-            if (updated) {
-              setOrder(updated)
-            }
-            Taro.showToast({ title: '状态已更新', icon: 'success' })
+            doUpdateStatus(nextStatus)
           }
         }
       })
     }
   }
 
+  const doUpdateStatus = (nextStatus: OrderInfo['status']) => {
+    const success = updateOrderStatus(id, nextStatus)
+    if (success) {
+      const updated = getOrderById(id)
+      if (updated) {
+        setOrder(updated)
+      }
+      Taro.showToast({ title: '状态已更新', icon: 'success' })
+    } else {
+      Taro.showToast({ title: '操作失败，库存不足', icon: 'none' })
+    }
+  }
+
   const handleViewQuality = () => {
     if (order.batchNo) {
-      const test = qualityTests.find(t => t.batchNo === order.batchNo)
+      const test = qualityTest
       if (test) {
         Taro.navigateTo({ url: `/pages/quality-detail/index?id=${test.id}` })
       } else {
@@ -89,7 +128,7 @@ const OrderDetailPage: React.FC = () => {
 
   const canAdvance = order.status !== 'completed' && order.status !== 'cancelled'
 
-  const nextStatusText = {
+  const nextStatusTextMap: Record<string, string> = {
     pending: '开始生产',
     producing: '确认发货',
     shipped: '确认完成',
@@ -102,6 +141,23 @@ const OrderDetailPage: React.FC = () => {
         <Text className={styles.title}>{order.customer}</Text>
         <Text className={styles.statusTag}>{getStatusText(order.status)}</Text>
       </View>
+
+      {order.batchNo && inventory && (
+        <View className={styles.inventoryCard}>
+          <View className={styles.invLeft}>
+            <Text className={styles.invLabel}>批次 {order.batchNo}</Text>
+            <Text className={styles.invValue}>
+              可售 {inventory.availableQty} {inventory.unit}
+            </Text>
+          </View>
+          <View className={styles.invRight}>
+            <Text className={styles.invLabel}>已预留</Text>
+            <Text className={classnames(styles.invValue, styles.invReserved)}>
+              {inventory.reservedQty} {inventory.unit}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View className={styles.section}>
         <Text className={styles.sectionTitle}>订单进度</Text>
@@ -124,7 +180,7 @@ const OrderDetailPage: React.FC = () => {
         {canAdvance && (
           <View className={styles.actionBtns}>
             <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleNextStatus}>
-              {nextStatusText[order.status as keyof typeof nextStatusText] || '更新状态'}
+              {nextStatusTextMap[order.status as keyof typeof nextStatusTextMap] || '更新状态'}
             </View>
           </View>
         )}
@@ -181,7 +237,7 @@ const OrderDetailPage: React.FC = () => {
             <Text className={styles.label}>关联批次</Text>
             <View style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text className={styles.value}>{order.batchNo || '暂无'}</Text>
-              {order.batchNo && (
+              {order.batchNo && qualityTest && (
                 <Text
                   style={{ fontSize: '24rpx', color: '#5E35B1' }}
                   onClick={handleViewQuality}
@@ -191,6 +247,18 @@ const OrderDetailPage: React.FC = () => {
               )}
             </View>
           </View>
+          {inventory && (
+            <>
+              <View className={styles.infoItem}>
+                <Text className={styles.label}>库存总量</Text>
+                <Text className={styles.value}>{inventory.totalQty} {inventory.unit}</Text>
+              </View>
+              <View className={styles.infoItem}>
+                <Text className={styles.label}>品质等级</Text>
+                <Text className={styles.value}>{getStatusText(inventory.quality)}</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -200,7 +268,7 @@ const OrderDetailPage: React.FC = () => {
         </View>
         {canAdvance && (
           <View className={classnames(styles.footerBtn, styles.btnPrimary)} onClick={handleNextStatus}>
-            {nextStatusText[order.status as keyof typeof nextStatusText] || '更新状态'}
+            {nextStatusTextMap[order.status as keyof typeof nextStatusTextMap] || '更新状态'}
           </View>
         )}
       </View>

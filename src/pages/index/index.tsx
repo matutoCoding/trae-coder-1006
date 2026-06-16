@@ -1,17 +1,19 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import classnames from 'classnames'
 import styles from './index.module.scss'
 import StatCard from '@/components/StatCard'
+import { useAppStore } from '@/store'
 import { fieldStats } from '@/data/field'
 
 const modules = [
-  { key: 'field', icon: '🌿', title: '药田台账', desc: '地块档案 · GAP认证管理', bg: '#E8F5E9', color: '#2E7D32' },
-  { key: 'seedling', icon: '🌱', title: '种苗管理', desc: '道地种苗 · 繁育记录', bg: '#E0F2F1', color: '#00897B' },
-  { key: 'farm', icon: '👨‍🌾', title: '农事记录', desc: '施肥灌溉 · 田间管理', bg: '#FFF3E0', color: '#EF6C00' },
-  { key: 'pest', icon: '🐛', title: '病虫防治', desc: '绿色防控 · 病虫监测', bg: '#FCE4EC', color: '#C2185B' },
-  { key: 'harvest', icon: '🌻', title: '采收加工', desc: '采收计划 · 产地初加工', bg: '#FFF8E1', color: '#F57F17' },
-  { key: 'quality', icon: '🔬', title: '质量检测', desc: '农残检测 · 批次溯源', bg: '#E3F2FD', color: '#1565C0' },
+  { key: 'field', icon: '🌿', title: '药田台账', desc: '地块档案 · GAP认证管理', bg: '#E8F5E9', color: '#2E7D32', isTab: true },
+  { key: 'seedling', icon: '🌱', title: '种苗管理', desc: '道地种苗 · 繁育记录', bg: '#E0F2F1', color: '#00897B', isTab: false },
+  { key: 'farm', icon: '👨‍🌾', title: '农事记录', desc: '施肥灌溉 · 田间管理', bg: '#FFF3E0', color: '#EF6C00', isTab: true },
+  { key: 'pest', icon: '🐛', title: '病虫防治', desc: '绿色防控 · 病虫监测', bg: '#FCE4EC', color: '#C2185B', isTab: false },
+  { key: 'harvest', icon: '🌻', title: '采收加工', desc: '采收计划 · 产地初加工', bg: '#FFF8E1', color: '#F57F17', isTab: false },
+  { key: 'quality', icon: '🔬', title: '质量检测', desc: '农残检测 · 批次溯源', bg: '#E3F2FD', color: '#1565C0', isTab: true },
 ]
 
 const quickActions = [
@@ -21,9 +23,75 @@ const quickActions = [
   { key: 'addHarvest', icon: '🧺', label: '记采收', bg: '#FFF8E1' },
 ]
 
+interface TodoItem {
+  id: string
+  icon: string
+  title: string
+  desc: string
+  type: 'warning' | 'info' | 'success' | 'danger'
+  route: string
+}
+
 const IndexPage: React.FC = () => {
-  const handleModuleClick = (key: string) => {
-    const tabBarPages = ['field', 'farm', 'quality', 'order']
+  const qualityTests = useAppStore(state => state.qualityTests)
+  const orders = useAppStore(state => state.orders)
+  const inventoryBatches = useAppStore(state => state.inventoryBatches)
+
+  const todoList = useMemo<TodoItem[]>(() => {
+    const todos: TodoItem[] = []
+
+    const pendingTests = qualityTests.filter(t => t.overallResult === 'pending')
+    pendingTests.forEach(t => {
+      todos.push({
+        id: `test-${t.id}`,
+        icon: '🔬',
+        title: '检测待出报告',
+        desc: `${t.herbType} 批次 ${t.batchNo} 检测结果待录入`,
+        type: 'warning',
+        route: `/pages/quality-detail/index?id=${t.id}`
+      })
+    })
+
+    const shippedOrders = orders.filter(o => o.status === 'shipped')
+    shippedOrders.forEach(o => {
+      todos.push({
+        id: `order-${o.id}`,
+        icon: '🚚',
+        title: '订单待确认完成',
+        desc: `${o.customer} - ${o.herbType} ${o.quantity}${o.unit}`,
+        type: 'info',
+        route: `/pages/order-detail/index?id=${o.id}`
+      })
+    })
+
+    const pendingOrders = orders.filter(o => o.status === 'pending')
+    pendingOrders.forEach(o => {
+      todos.push({
+        id: `produce-${o.id}`,
+        icon: '📋',
+        title: '订单待处理',
+        desc: `${o.customer} - ${o.herbType} ${o.quantity}${o.unit}`,
+        type: 'warning',
+        route: `/pages/order-detail/index?id=${o.id}`
+      })
+    })
+
+    const lowStock = inventoryBatches.filter(b => b.status === 'low_stock' || b.status === 'out_of_stock')
+    lowStock.forEach(b => {
+      todos.push({
+        id: `inv-${b.id}`,
+        icon: '📦',
+        title: b.status === 'out_of_stock' ? '库存已售罄' : '库存偏低',
+        desc: `${b.herbType} 批次 ${b.batchNo} 仅剩 ${b.availableQty}${b.unit}`,
+        type: b.status === 'out_of_stock' ? 'danger' : 'warning',
+        route: `/pages/inventory/index`
+      })
+    })
+
+    return todos.slice(0, 6)
+  }, [qualityTests, orders, inventoryBatches])
+
+  const handleModuleClick = (key: string, isTab: boolean) => {
     const routeMap: Record<string, string> = {
       field: '/pages/field/index',
       seedling: '/pages/seedling/index',
@@ -32,10 +100,11 @@ const IndexPage: React.FC = () => {
       harvest: '/pages/harvest/index',
       quality: '/pages/quality/index',
       order: '/pages/order/index',
+      inventory: '/pages/inventory/index',
     }
     const url = routeMap[key]
     if (url) {
-      if (tabBarPages.includes(key)) {
+      if (isTab) {
         Taro.switchTab({ url })
       } else {
         Taro.navigateTo({ url })
@@ -58,6 +127,10 @@ const IndexPage: React.FC = () => {
 
   const handleOrderClick = () => {
     Taro.switchTab({ url: '/pages/order/index' })
+  }
+
+  const handleTodoClick = (route: string) => {
+    Taro.navigateTo({ url: route })
   }
 
   return (
@@ -87,15 +160,32 @@ const IndexPage: React.FC = () => {
         ))}
       </View>
 
-      <View className={styles.noticeCard}>
-        <Text className={styles.noticeIcon}>📢</Text>
-        <View className={styles.noticeContent}>
-          <Text className={styles.noticeTitle}>农事提醒</Text>
-          <Text className={styles.noticeText}>
-            A1号地块人参即将进入采收期，请提前做好采收准备工作。C2号地块天麻已完成采收，请及时晾晒加工。
-          </Text>
+      {todoList.length > 0 && (
+        <View className={styles.todoSection}>
+          <View className={styles.todoHeader}>
+            <Text className={styles.todoTitle}>📋 今日待办</Text>
+            <Text className={styles.todoCount}>{todoList.length} 项</Text>
+          </View>
+          <View className={styles.todoList}>
+            {todoList.map(item => (
+              <View
+                key={item.id}
+                className={styles.todoItem}
+                onClick={() => handleTodoClick(item.route)}
+              >
+                <View className={classnames(styles.todoIcon, styles[`todo-${item.type}`])}>
+                  {item.icon}
+                </View>
+                <View className={styles.todoContent}>
+                  <Text className={styles.todoItemTitle}>{item.title}</Text>
+                  <Text className={styles.todoDesc}>{item.desc}</Text>
+                </View>
+                <Text className={styles.todoArrow}>›</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       <View className={styles.sectionWrap}>
         <View className={styles.sectionHeader}>
@@ -107,7 +197,7 @@ const IndexPage: React.FC = () => {
             <View
               key={item.key}
               className={styles.moduleCard}
-              onClick={() => handleModuleClick(item.key)}
+              onClick={() => handleModuleClick(item.key, item.isTab)}
             >
               <View className={styles.iconBox} style={{ backgroundColor: item.bg }}>
                 <Text>{item.icon}</Text>
@@ -132,12 +222,12 @@ const IndexPage: React.FC = () => {
             <Text className={styles.title}>药企订单</Text>
             <Text className={styles.desc}>订单管理 · 状态跟踪</Text>
           </View>
-          <View className={styles.moduleCard} onClick={handleOrderClick}>
+          <View className={styles.moduleCard} onClick={() => handleModuleClick('inventory', false)}>
             <View className={styles.iconBox} style={{ backgroundColor: '#E8F5E9' }}>
               <Text>📊</Text>
             </View>
-            <Text className={styles.title}>产销台账</Text>
-            <Text className={styles.desc}>销售记录 · 往来账目</Text>
+            <Text className={styles.title}>库存批次</Text>
+            <Text className={styles.desc}>库存余量 · 批次管理</Text>
           </View>
         </View>
       </View>

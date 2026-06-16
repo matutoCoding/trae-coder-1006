@@ -50,6 +50,7 @@ export interface PestRecord {
 
 export interface HarvestRecord {
   id: string
+  batchNo: string
   fieldId: string
   fieldName: string
   herbType: string
@@ -119,6 +120,22 @@ export interface ProcessingRecord {
   operator: string
   inputQty: number
   outputQty: number
+}
+
+export interface InventoryBatch {
+  id: string
+  batchNo: string
+  herbType: string
+  totalQty: number
+  availableQty: number
+  reservedQty: number
+  unit: string
+  quality: 'excellent' | 'good' | 'normal'
+  warehouseDate: string
+  fieldId: string
+  fieldName: string
+  status: 'in_stock' | 'low_stock' | 'out_of_stock'
+  remark?: string
 }
 
 export interface StatItem {

@@ -3,6 +3,7 @@ import { HarvestRecord, StatItem } from '@/types'
 export const harvestList: HarvestRecord[] = [
   {
     id: '1',
+    batchNo: '20240510-TM-C2',
     fieldId: '6',
     fieldName: 'C2号地块',
     herbType: '天麻',
@@ -16,6 +17,7 @@ export const harvestList: HarvestRecord[] = [
   },
   {
     id: '2',
+    batchNo: '20240815-RS-A1',
     fieldId: '1',
     fieldName: 'A1号地块',
     herbType: '人参',
@@ -29,6 +31,7 @@ export const harvestList: HarvestRecord[] = [
   },
   {
     id: '3',
+    batchNo: '20240920-HJ-B1',
     fieldId: '3',
     fieldName: 'B1号地块',
     herbType: '黄精',
@@ -42,6 +45,7 @@ export const harvestList: HarvestRecord[] = [
   },
   {
     id: '4',
+    batchNo: '20240710-TP-C1',
     fieldId: '5',
     fieldName: 'C1号地块',
     herbType: '铁皮石斛',
@@ -55,6 +59,7 @@ export const harvestList: HarvestRecord[] = [
   },
   {
     id: '5',
+    batchNo: '20241025-DG-D1',
     fieldId: '7',
     fieldName: 'D1号地块',
     herbType: '当归',
@@ -68,6 +73,7 @@ export const harvestList: HarvestRecord[] = [
   },
   {
     id: '6',
+    batchNo: '20241105-BZ-B2',
     fieldId: '4',
     fieldName: 'B2号地块',
     herbType: '白术',

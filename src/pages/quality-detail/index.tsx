@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
@@ -12,12 +12,14 @@ const QualityDetailPage: React.FC = () => {
   const id = router.params.id || ''
 
   const getQualityTestById = useAppStore(state => state.getQualityTestById)
-  const harvestRecords = useAppStore(state => state.harvestRecords)
-  const processingRecords = useAppStore(state => state.processingRecords)
+  const getHarvestByBatchNo = useAppStore(state => state.getHarvestByBatchNo)
+  const getProcessingByBatchNo = useAppStore(state => state.getProcessingByBatchNo)
+  const getOrdersByBatchNo = useAppStore(state => state.getOrdersByBatchNo)
+  const getInventoryByBatchNo = useAppStore(state => state.getInventoryByBatchNo)
+  const getFieldById = useAppStore(state => state.getFieldById)
   const farmRecords = useAppStore(state => state.farmRecords)
   const pestRecords = useAppStore(state => state.pestRecords)
-  const orders = useAppStore(state => state.orders)
-  const fields = useAppStore(state => state.fields)
+  const seedlings = useAppStore(state => state.seedlings)
 
   const [test, setTest] = useState<QualityTest | null>(null)
 
@@ -29,6 +31,33 @@ const QualityDetailPage: React.FC = () => {
       }
     }
   }, [id, getQualityTestById])
+
+  const batchData = useMemo(() => {
+    if (!test) return null
+
+    const harvestRecord = getHarvestByBatchNo(test.batchNo)
+    const processingRecords = getProcessingByBatchNo(test.batchNo)
+    const relatedOrders = getOrdersByBatchNo(test.batchNo)
+    const inventory = getInventoryByBatchNo(test.batchNo)
+    const fieldInfo = harvestRecord ? getFieldById(harvestRecord.fieldId) : undefined
+
+    const fieldFarmRecords = harvestRecord
+      ? farmRecords.filter(r => r.fieldId === harvestRecord.fieldId)
+      : []
+    const fieldPestRecords = harvestRecord
+      ? pestRecords.filter(r => r.fieldId === harvestRecord.fieldId)
+      : []
+
+    return {
+      harvestRecord,
+      processingRecords,
+      relatedOrders,
+      inventory,
+      fieldInfo,
+      fieldFarmRecords,
+      fieldPestRecords,
+    }
+  }, [test, getHarvestByBatchNo, getProcessingByBatchNo, getOrdersByBatchNo, getInventoryByBatchNo, getFieldById, farmRecords, pestRecords])
 
   if (!test) {
     return (
@@ -46,47 +75,54 @@ const QualityDetailPage: React.FC = () => {
   const passCount = test.testItems.filter(item => item.isPass).length
   const totalCount = test.testItems.length
 
-  const harvestRecord = harvestRecords.find(h => h.fieldName.includes(test.herbType))
-  const fieldInfo = fields.find(f => f.herbType === test.herbType)
-
-  const relatedOrders = orders.filter(o => o.batchNo === test.batchNo)
+  const harvest = batchData?.harvestRecord
+  const field = batchData?.fieldInfo
+  const processingList = batchData?.processingRecords || []
+  const orders = batchData?.relatedOrders || []
+  const inventory = batchData?.inventory
+  const farmList = batchData?.fieldFarmRecords || []
+  const pestList = batchData?.fieldPestRecords || []
 
   const traceSteps = [
     {
       title: '种苗培育',
-      time: fieldInfo?.plantDate ? `${fieldInfo.plantDate} 定植` : '',
-      desc: `${test.herbType} 种苗，品种纯正，道地药材繁育基地培育`,
-      done: true
+      time: seedlings.length > 0 ? `${seedlings[0].nurseryDate} 育苗` : '',
+      desc: seedlings.length > 0
+        ? `${seedlings[0].name}，品种：${seedlings[0].variety}，来源：${seedlings[0].source}`
+        : '暂无种苗记录',
+      done: seedlings.length > 0
     },
     {
       title: '种植管理',
-      time: fieldInfo?.plantDate ? `定植于 ${fieldInfo.plantDate}` : '',
-      desc: `地块：${fieldInfo?.name || '待关联'}，土壤类型：${fieldInfo?.soilType || '待记录'}，生长年限：${fieldInfo?.growthYears || 0}年`,
-      done: true
+      time: field?.plantDate ? `定植于 ${field.plantDate}` : '',
+      desc: field
+        ? `地块：${field.name}，面积：${field.area}亩，土壤：${field.soilType}，生长年限：${field.growthYears}年`
+        : '暂无地块信息',
+      done: !!field
     },
     {
       title: '农事作业',
-      time: farmRecords.length > 0 ? `${farmRecords.length} 条农事记录` : '',
-      desc: farmRecords.length > 0
-        ? `施肥 ${farmRecords.filter(r => r.type === 'fertilize').length}次，灌溉 ${farmRecords.filter(r => r.type === 'irrigate').length}次，其他农事 ${farmRecords.filter(r => !['fertilize', 'irrigate'].includes(r.type)).length}次`
+      time: farmList.length > 0 ? `${farmList.length} 条农事记录` : '',
+      desc: farmList.length > 0
+        ? `施肥 ${farmList.filter(r => r.type === 'fertilize').length}次，灌溉 ${farmList.filter(r => r.type === 'irrigate').length}次，其他农事 ${farmList.filter(r => !['fertilize', 'irrigate'].includes(r.type)).length}次`
         : '暂无农事记录',
-      done: true
+      done: farmList.length > 0
     },
     {
       title: '病虫防治',
-      time: pestRecords.length > 0 ? `${pestRecords.length} 条防治记录` : '',
-      desc: pestRecords.length > 0
-        ? `绿色防控为主，综合防治率 100%，农残控制符合 GAP 标准`
+      time: pestList.length > 0 ? `${pestList.length} 条防治记录` : '',
+      desc: pestList.length > 0
+        ? `病害 ${pestList.filter(r => r.type === 'disease').length}次，虫害 ${pestList.filter(r => r.type === 'pest').length}次，绿色防控为主`
         : '无病虫害发生',
       done: true
     },
     {
       title: '采收加工',
-      time: harvestRecord ? harvestRecord.harvestDate : '待采收',
-      desc: harvestRecord
-        ? `${harvestRecord.fieldName} 采收，产量 ${harvestRecord.yield}${harvestRecord.unit}，品质：${getStatusText(harvestRecord.quality)}`
+      time: harvest ? harvest.harvestDate : '待采收',
+      desc: harvest
+        ? `${harvest.fieldName} 采收，产量 ${harvest.yield}${harvest.unit}，品质：${getStatusText(harvest.quality)}，加工：${processingList.length}道工序`
         : '暂无采收记录',
-      done: !!harvestRecord
+      done: !!harvest
     },
     {
       title: '质量检测',
@@ -96,11 +132,11 @@ const QualityDetailPage: React.FC = () => {
     },
     {
       title: '订单销售',
-      time: relatedOrders.length > 0 ? `${relatedOrders.length} 个订单` : '',
-      desc: relatedOrders.length > 0
-        ? `客户：${relatedOrders.map(o => o.customer).join('、')}`
+      time: orders.length > 0 ? `${orders.length} 个订单` : '',
+      desc: orders.length > 0
+        ? `客户：${orders.map(o => o.customer).join('、')}，库存可售：${inventory?.availableQty || 0}${inventory?.unit || 'kg'}`
         : '暂无订单',
-      done: relatedOrders.length > 0 && relatedOrders.some(o => o.status === 'completed')
+      done: orders.length > 0 && orders.some(o => o.status === 'completed')
     }
   ]
 
@@ -114,6 +150,7 @@ const QualityDetailPage: React.FC = () => {
             <View key={index} className={styles.testItemRow}>
               <Text className={styles.itemName}>{item.name}</Text>
               <Text className={styles.itemResult}>{item.result}</Text>
+              <Text className={styles.itemStandard}>{item.standard}</Text>
               <Text className={styles.itemStatus}>
                 {item.isPass ? '✅' : '❌'}
               </Text>
@@ -133,6 +170,23 @@ const QualityDetailPage: React.FC = () => {
           {getStatusText(test.overallResult)}
         </Text>
       </View>
+
+      {inventory && (
+        <View className={styles.inventoryCard}>
+          <View className={styles.invItem}>
+            <Text className={styles.invLabel}>库存总量</Text>
+            <Text className={styles.invValue}>{inventory.totalQty} {inventory.unit}</Text>
+          </View>
+          <View className={styles.invItem}>
+            <Text className={styles.invLabel}>可售数量</Text>
+            <Text className={classnames(styles.invValue, styles.invAvail)}>{inventory.availableQty} {inventory.unit}</Text>
+          </View>
+          <View className={styles.invItem}>
+            <Text className={styles.invLabel}>已预留</Text>
+            <Text className={styles.invValue}>{inventory.reservedQty} {inventory.unit}</Text>
+          </View>
+        </View>
+      )}
 
       <View className={styles.section}>
         <Text className={styles.sectionTitle}>

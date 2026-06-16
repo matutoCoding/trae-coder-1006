@@ -174,3 +174,109 @@
     }
   }
 }
+
+.todoSection {
+  margin: $spacing-lg $page-padding;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.todoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  .todoTitle {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  .todoCount {
+    font-size: $font-size-sm;
+    color: $color-primary;
+    background: rgba($color-primary, 0.1);
+    padding: 4rpx 16rpx;
+    border-radius: 20rpx;
+  }
+}
+
+.todoList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.todoItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  background: $color-bg-light;
+  border-radius: $radius-md;
+  transition: all $transition-base;
+
+  &:active {
+    background: rgba($color-primary, 0.05);
+    transform: scale(0.98);
+  }
+}
+
+.todoIcon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+
+  &.todo-warning {
+    background: #FFF3E0;
+  }
+
+  &.todo-info {
+    background: #E3F2FD;
+  }
+
+  &.todo-success {
+    background: #E8F5E9;
+  }
+
+  &.todo-danger {
+    background: #FFEBEE;
+  }
+}
+
+.todoContent {
+  flex: 1;
+  min-width: 0;
+
+  .todoItemTitle {
+    font-size: $font-size-md;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    margin-bottom: 4rpx;
+    display: block;
+  }
+
+  .todoDesc {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.todoArrow {
+  font-size: 40rpx;
+  color: $color-text-tertiary;
+  margin-left: $spacing-sm;
+  flex-shrink: 0;
+}

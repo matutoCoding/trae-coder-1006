@@ -47,6 +47,39 @@
   }
 }
 
+.inventoryCard {
+  display: flex;
+  justify-content: space-around;
+  margin: -20rpx $page-padding 0;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md 0;
+  box-shadow: $shadow-card;
+}
+
+.invItem {
+  text-align: center;
+  flex: 1;
+
+  .invLabel {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    display: block;
+    margin-bottom: $spacing-xs;
+  }
+
+  .invValue {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    display: block;
+
+    &.invAvail {
+      color: $color-success;
+    }
+  }
+}
+
 .section {
   margin: $spacing-md $page-padding;
   background: $color-bg-card;

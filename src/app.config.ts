@@ -17,6 +17,7 @@ export default defineAppConfig({
     'pages/quality-form/index',
     'pages/order-detail/index',
     'pages/order-form/index',
+    'pages/inventory/index',
   ],
   window: {
     backgroundTextStyle: 'light',

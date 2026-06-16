@@ -1,0 +1,202 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 120rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+  padding: $spacing-xl $page-padding $spacing-lg;
+  color: $color-text-white;
+
+  .title {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-xs;
+  }
+
+  .subtitle {
+    font-size: $font-size-sm;
+    opacity: 0.9;
+  }
+}
+
+.statsWrap {
+  margin: -30rpx $page-padding 0;
+  position: relative;
+  z-index: 2;
+}
+
+.filterBar {
+  display: flex;
+  gap: $spacing-sm;
+  padding: $spacing-md $page-padding;
+  overflow-x: auto;
+
+  .filterItem {
+    flex-shrink: 0;
+    padding: $spacing-xs $spacing-md;
+    border-radius: 100rpx;
+    font-size: $font-size-sm;
+    background: $color-bg-card;
+    color: $color-text-secondary;
+
+    &.active {
+      background: $color-primary;
+      color: $color-text-white;
+    }
+  }
+}
+
+.cardList {
+  padding: 0 $page-padding $spacing-md;
+}
+
+.inventoryCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1rpx solid $color-border-light;
+}
+
+.cardTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: 4rpx;
+}
+
+.cardBatch {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.statusTag {
+  padding: 6rpx 20rpx;
+  border-radius: 100rpx;
+  font-size: $font-size-xs;
+
+  &.in_stock {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+
+  &.low_stock {
+    background: #FFF3E0;
+    color: #EF6C00;
+  }
+
+  &.out_of_stock {
+    background: #FFEBEE;
+    color: #C62828;
+  }
+}
+
+.qtyRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.qtyItem {
+  text-align: center;
+  flex: 1;
+
+  .qtyLabel {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    margin-bottom: 4rpx;
+    display: block;
+  }
+
+  .qtyValue {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+
+    &.available {
+      color: $color-success;
+    }
+
+    &.reserved {
+      color: $color-warning;
+    }
+  }
+
+  .qtyUnit {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.infoRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+
+  .infoItem {
+    width: 48%;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+
+    .infoLabel {
+      color: $color-text-tertiary;
+      margin-right: 8rpx;
+    }
+  }
+}
+
+.progressBar {
+  height: 12rpx;
+  background: #f0f0f0;
+  border-radius: 6rpx;
+  margin: $spacing-sm 0;
+  overflow: hidden;
+
+  .progressFill {
+    height: 100%;
+    border-radius: 6rpx;
+    transition: width 0.3s;
+
+    &.high {
+      background: linear-gradient(90deg, #4CAF50, #2E7D32);
+    }
+
+    &.medium {
+      background: linear-gradient(90deg, #FFB74D, #FF9800);
+    }
+
+    &.low {
+      background: linear-gradient(90deg, #EF5350, #C62828);
+    }
+  }
+}
+
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60rpx;
+  box-shadow: 0 8rpx 24rpx rgba(46, 125, 50, 0.4);
+  z-index: 100;
+}
