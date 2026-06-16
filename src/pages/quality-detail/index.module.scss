@@ -1,0 +1,229 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 60rpx;
+}
+
+.header {
+  background: linear-gradient(180deg, #1565C0 0%, #42A5F5 100%);
+  padding: $spacing-xl $page-padding $spacing-lg;
+  color: $color-text-white;
+
+  .batchNo {
+    font-size: $font-size-lg;
+    opacity: 0.9;
+    margin-bottom: $spacing-xs;
+  }
+
+  .title {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-sm;
+  }
+
+  .resultTag {
+    display: inline-block;
+    padding: 6rpx 20rpx;
+    border-radius: 100rpx;
+    font-size: $font-size-sm;
+    background: rgba(255, 255, 255, 0.2);
+
+    &.pass {
+      background: rgba(76, 175, 80, 0.3);
+      color: #fff;
+    }
+
+    &.fail {
+      background: rgba(244, 67, 54, 0.3);
+      color: #fff;
+    }
+
+    &.pending {
+      background: rgba(255, 193, 7, 0.3);
+      color: #fff;
+    }
+  }
+}
+
+.section {
+  margin: $spacing-md $page-padding;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  padding-left: $spacing-sm;
+  border-left: 6rpx solid #1565C0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .passCount {
+    font-size: $font-size-sm;
+    color: $color-success;
+    font-weight: $font-weight-regular;
+  }
+}
+
+.infoGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+}
+
+.infoItem {
+  width: 50%;
+  flex: 1 1 45%;
+
+  .label {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    margin-bottom: 4rpx;
+  }
+
+  .value {
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.testCategory {
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.categoryTitle {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+  padding-bottom: $spacing-xs;
+  border-bottom: 1rpx dashed $color-divider;
+}
+
+.testItemList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.testItemRow {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm 0;
+
+  .itemName {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+  }
+
+  .itemResult {
+    flex-shrink: 0;
+    min-width: 120rpx;
+    text-align: right;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+
+  .itemStatus {
+    width: 48rpx;
+    text-align: center;
+    font-size: $font-size-md;
+  }
+}
+
+.timelineSection {
+  margin: $spacing-md $page-padding;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 40rpx;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 14rpx;
+    top: 10rpx;
+    bottom: 10rpx;
+    width: 4rpx;
+    background: $color-border-light;
+  }
+}
+
+.timelineItem {
+  position: relative;
+  padding-bottom: $spacing-lg;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.timelineDot {
+  position: absolute;
+  left: -40rpx;
+  top: 4rpx;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: $color-bg-card;
+  border: 4rpx solid #1565C0;
+  z-index: 1;
+
+  &.done {
+    background: #1565C0;
+  }
+}
+
+.timelineContent {
+  background: $color-bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+}
+
+.timelineTitle {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.timelineTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-sm;
+}
+
+.timelineDesc {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.6;
+}
+
+.timelineTag {
+  display: inline-block;
+  padding: 2rpx 12rpx;
+  border-radius: 4rpx;
+  font-size: $font-size-xs;
+  background: #E3F2FD;
+  color: #1565C0;
+  margin-top: $spacing-xs;
+}

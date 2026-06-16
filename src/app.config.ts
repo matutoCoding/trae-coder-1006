@@ -1,10 +1,22 @@
 export default defineAppConfig({
   pages: [
+    'pages/index/index',
     'pages/field/index',
-    'pages/farming/index',
-    'pages/harvest/index',
+    'pages/farm/index',
     'pages/quality/index',
-    'pages/order/index'
+    'pages/order/index',
+    'pages/seedling/index',
+    'pages/pest/index',
+    'pages/harvest/index',
+    'pages/field-form/index',
+    'pages/seedling-form/index',
+    'pages/farm-form/index',
+    'pages/pest-form/index',
+    'pages/harvest-form/index',
+    'pages/quality-detail/index',
+    'pages/quality-form/index',
+    'pages/order-detail/index',
+    'pages/order-form/index',
   ],
   window: {
     backgroundTextStyle: 'light',
@@ -19,16 +31,16 @@ export default defineAppConfig({
     borderStyle: 'black',
     list: [
       {
+        pagePath: 'pages/index/index',
+        text: '首页'
+      },
+      {
         pagePath: 'pages/field/index',
         text: '药田台账'
       },
       {
-        pagePath: 'pages/farming/index',
-        text: '农事管理'
-      },
-      {
-        pagePath: 'pages/harvest/index',
-        text: '采收加工'
+        pagePath: 'pages/farm/index',
+        text: '农事记录'
       },
       {
         pagePath: 'pages/quality/index',

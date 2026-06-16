@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, ScrollView, RefreshControl } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import StatCard from '@/components/StatCard'
 import StatusTag from '@/components/StatusTag'
-import { harvestList, harvestStats, processingList } from '@/data/harvest'
+import { useAppStore } from '@/store'
 import { HarvestRecord } from '@/types'
 import { getStatusText } from '@/utils'
 
@@ -14,21 +14,42 @@ type TabType = 'harvest' | 'process'
 const HarvestPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('harvest')
   const [refreshing, setRefreshing] = useState(false)
+  const harvestRecords = useAppStore(state => state.harvestRecords)
+  const processingRecords = useAppStore(state => state.processingRecords)
+
+  const stats = useMemo(() => {
+    const thisYear = new Date().getFullYear()
+    const yearRecords = harvestRecords.filter(r => r.harvestDate.startsWith(String(thisYear)))
+    const totalYield = yearRecords.reduce((sum, r) => sum + r.yield, 0)
+    const processingCount = yearRecords.filter(r => r.processingStatus !== 'finished').length
+    const excellentRate = yearRecords.length > 0
+      ? Math.round(yearRecords.filter(r => r.quality === 'excellent').length / yearRecords.length * 100)
+      : 0
+    return [
+      { label: '今年采收', value: yearRecords.length, unit: '批次' },
+      { label: '总产量', value: totalYield, unit: 'kg' },
+      { label: '加工中', value: processingCount, unit: '批次' },
+      { label: '优级品率', value: excellentRate, unit: '%' }
+    ]
+  }, [harvestRecords])
 
   const onRefresh = () => {
     setRefreshing(true)
     setTimeout(() => {
       setRefreshing(false)
-      Taro.showToast({ title: '刷新成功', icon: 'success' })
-    }, 1000)
+    }, 800)
   }
 
   const handleAdd = () => {
-    console.log('[Harvest] 新增记录')
-    Taro.showToast({
-      title: activeTab === 'harvest' ? '新增采收记录' : '新增加工记录',
-      icon: 'none'
-    })
+    if (activeTab === 'harvest') {
+      Taro.navigateTo({ url: '/pages/harvest-form/index?mode=add' })
+    } else {
+      Taro.showToast({ title: '新增加工记录', icon: 'none' })
+    }
+  }
+
+  const handleHarvestClick = (record: HarvestRecord) => {
+    Taro.navigateTo({ url: `/pages/harvest-form/index?mode=edit&id=${record.id}` })
   }
 
   const getProcessingSteps = (status: string) => {
@@ -53,14 +74,11 @@ const HarvestPage: React.FC = () => {
         <Text className={styles.sectionMore}>查看全部</Text>
       </View>
       <View className={styles.cardList}>
-        {harvestList.map((record: HarvestRecord) => (
+        {harvestRecords.map((record: HarvestRecord) => (
           <View
             key={record.id}
             className={styles.card}
-            onClick={() => {
-              console.log('[Harvest] 点击采收记录:', record.id)
-              Taro.showToast({ title: `${record.herbType}采收详情`, icon: 'none' })
-            }}
+            onClick={() => handleHarvestClick(record)}
           >
             <View className={styles.cardHeader}>
               <View>
@@ -115,12 +133,11 @@ const HarvestPage: React.FC = () => {
         <Text className={styles.sectionMore}>查看全部</Text>
       </View>
       <View className={styles.cardList}>
-        {processingList.map(item => (
+        {processingRecords.map(item => (
           <View
             key={item.id}
             className={styles.card}
             onClick={() => {
-              console.log('[Harvest] 点击加工记录:', item.batchNo)
               Taro.showToast({ title: item.batchNo, icon: 'none' })
             }}
           >
@@ -204,7 +221,7 @@ const HarvestPage: React.FC = () => {
       </View>
 
       <View className={styles.statsWrap}>
-        <StatCard data={harvestStats} />
+        <StatCard data={stats} />
       </View>
 
       <View className={styles.tabBar}>

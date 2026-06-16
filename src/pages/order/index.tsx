@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, ScrollView, RefreshControl } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import StatCard from '@/components/StatCard'
 import StatusTag from '@/components/StatusTag'
-import { orderList, orderStats, salesRecordList, salesStats } from '@/data/order'
+import { useAppStore } from '@/store'
 import { OrderInfo, SalesRecord } from '@/types'
 import { formatCurrency } from '@/utils'
 
@@ -14,21 +14,47 @@ type TabType = 'order' | 'sales'
 const OrderPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('order')
   const [refreshing, setRefreshing] = useState(false)
+  const orders = useAppStore(state => state.orders)
+  const salesRecords = useAppStore(state => state.salesRecords)
+
+  const stats = useMemo(() => {
+    const pendingCount = orders.filter(o => o.status === 'pending').length
+    const producingCount = orders.filter(o => o.status === 'producing').length
+    const totalAmount = orders.reduce((sum, o) => sum + o.amount, 0)
+    const completedCount = orders.filter(o => o.status === 'completed').length
+    return [
+      { label: '订单总数', value: orders.length, unit: '单' },
+      { label: '待处理', value: pendingCount, unit: '单' },
+      { label: '进行中', value: producingCount, unit: '单' },
+      { label: '已完成', value: completedCount, unit: '单' },
+    ]
+  }, [orders])
+
+  const salesStats = useMemo(() => {
+    const months = ['1月', '2月', '3月', '4月', '5月', '6月']
+    return months.map((month, i) => ({
+      month,
+      amount: Math.round((20 + Math.random() * 30) * 10) / 10,
+    }))
+  }, [salesRecords])
 
   const onRefresh = () => {
     setRefreshing(true)
     setTimeout(() => {
       setRefreshing(false)
-      Taro.showToast({ title: '刷新成功', icon: 'success' })
-    }, 1000)
+    }, 800)
   }
 
   const handleAdd = () => {
-    console.log('[Order] 新增订单')
-    Taro.showToast({
-      title: activeTab === 'order' ? '新增订单' : '新增销售记录',
-      icon: 'none'
-    })
+    if (activeTab === 'order') {
+      Taro.navigateTo({ url: '/pages/order-form/index?mode=add' })
+    } else {
+      Taro.showToast({ title: '新增销售记录', icon: 'none' })
+    }
+  }
+
+  const handleOrderClick = (order: OrderInfo) => {
+    Taro.navigateTo({ url: `/pages/order-detail/index?id=${order.id}` })
   }
 
   const getStatusColor = (status: string) => {
@@ -60,14 +86,11 @@ const OrderPage: React.FC = () => {
         <Text className={styles.sectionMore}>查看全部</Text>
       </View>
       <View className={styles.cardList}>
-        {orderList.map((order: OrderInfo) => (
+        {orders.map((order: OrderInfo) => (
           <View
             key={order.id}
             className={styles.card}
-            onClick={() => {
-              console.log('[Order] 点击订单:', order.orderNo)
-              Taro.showToast({ title: order.orderNo, icon: 'none' })
-            }}
+            onClick={() => handleOrderClick(order)}
           >
             <View className={styles.cardHeader}>
               <View>
@@ -158,13 +181,15 @@ const OrderPage: React.FC = () => {
         </View>
 
         <View className={styles.salesList}>
-          {salesRecordList.map((record: SalesRecord) => (
+          {salesRecords.map((record: SalesRecord) => (
             <View
               key={record.id}
               className={styles.salesItem}
               onClick={() => {
-                console.log('[Order] 点击销售记录:', record.id)
-                Taro.showToast({ title: record.herbType, icon: 'none' })
+                const order = orders.find(o => o.id === record.id)
+                if (order) {
+                  Taro.navigateTo({ url: `/pages/order-detail/index?id=${order.id}` })
+                }
               }}
             >
               <View className={styles.salesLeft}>
@@ -197,7 +222,7 @@ const OrderPage: React.FC = () => {
       </View>
 
       <View className={styles.statsWrap}>
-        <StatCard data={orderStats} />
+        <StatCard data={stats} />
       </View>
 
       <View className={styles.tabBar}>

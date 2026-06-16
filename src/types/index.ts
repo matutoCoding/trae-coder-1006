@@ -108,6 +108,19 @@ export interface SalesRecord {
   batchNo: string
 }
 
+export interface ProcessingRecord {
+  id: string
+  batchNo: string
+  herbType: string
+  processType: string
+  startTime: string
+  endTime?: string
+  status: 'raw' | 'drying' | 'sliced' | 'completed'
+  operator: string
+  inputQty: number
+  outputQty: number
+}
+
 export interface StatItem {
   label: string
   value: string | number

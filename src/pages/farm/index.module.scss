@@ -7,7 +7,7 @@
 }
 
 .header {
-  background: linear-gradient(180deg, $color-primary 0%, $color-primary-light 100%);
+  background: linear-gradient(180deg, #EF6C00 0%, #FFB74D 100%);
   padding: $spacing-xl $page-padding $spacing-lg;
   color: $color-text-white;
 
@@ -28,15 +28,32 @@
   margin-top: -$spacing-lg;
 }
 
-.section {
+.filterBar {
+  padding: $spacing-md $page-padding;
+  display: flex;
+  gap: $spacing-sm;
+  overflow-x: auto;
+
+  .filterItem {
+    padding: $spacing-xs $spacing-md;
+    background: $color-bg-card;
+    border-radius: 100rpx;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    &.active {
+      background: #EF6C00;
+      color: #fff;
+    }
+  }
+}
+
+.cardList {
   padding: 0 $page-padding;
 }
 
-.fieldList {
-  padding: 0 $page-padding;
-}
-
-.fieldCard {
+.card {
   background: $color-bg-card;
   border-radius: $radius-lg;
   padding: $spacing-lg;
@@ -57,21 +74,27 @@
   margin-bottom: $spacing-md;
 }
 
-.fieldName {
+.cardTitle {
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
 }
 
-.herbBadge {
-  background: $color-primary-bg;
-  color: $color-primary;
+.cardSubtitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.typeBadge {
   padding: 4rpx 16rpx;
   border-radius: $radius-sm;
   font-size: $font-size-xs;
+  background: #FFF3E0;
+  color: #EF6C00;
 }
 
-.fieldInfo {
+.infoGrid {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-md;
@@ -80,9 +103,11 @@
 
 .infoItem {
   flex: 1;
-  min-width: 45%;
-  display: flex;
-  flex-direction: column;
+  min-width: 30%;
+
+  &[style*="flex: 2"] {
+    flex: 2 100%;
+  }
 }
 
 .infoLabel {
@@ -92,8 +117,10 @@
 }
 
 .infoValue {
-  font-size: $font-size-md;
-  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  line-height: 1.5;
 }
 
 .cardFooter {
@@ -104,55 +131,14 @@
   border-top: 1rpx solid $color-divider;
 }
 
-.growthInfo {
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
-
-.growthYears {
-  color: $color-primary;
-  font-weight: $font-weight-medium;
-}
-
-.quickActions {
-  display: flex;
-  gap: $spacing-md;
-  padding: $spacing-md $page-padding;
-  margin-bottom: $spacing-sm;
-}
-
-.actionCard {
-  flex: 1;
-  background: $color-bg-card;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: $shadow-card;
-  transition: all $transition-base;
-
-  &:active {
-    transform: scale(0.96);
-  }
-}
-
-.actionIcon {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: $radius-lg;
-  background: $color-primary-bg;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: $spacing-sm;
-  font-size: 36rpx;
-}
-
-.actionText {
-  font-size: $font-size-sm;
+.operator {
+  font-size: $font-size-xs;
   color: $color-text-secondary;
-  font-weight: $font-weight-medium;
+}
+
+.dateText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
 }
 
 .fab {
@@ -162,17 +148,32 @@
   width: 110rpx;
   height: 110rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  background: linear-gradient(135deg, #EF6C00 0%, #FFB74D 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 60rpx;
-  box-shadow: 0 8rpx 24rpx rgba(46, 125, 50, 0.4);
+  box-shadow: 0 8rpx 24rpx rgba(239, 108, 0, 0.4);
   z-index: 100;
   transition: all $transition-base;
 
   &:active {
     transform: scale(0.9);
+  }
+}
+
+.empty {
+  padding: 120rpx 0;
+  text-align: center;
+
+  .emptyIcon {
+    font-size: 120rpx;
+    margin-bottom: $spacing-md;
+  }
+
+  .emptyText {
+    font-size: $font-size-md;
+    color: $color-text-tertiary;
   }
 }

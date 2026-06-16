@@ -1,33 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, ScrollView, RefreshControl } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import styles from './index.module.scss'
 import StatCard from '@/components/StatCard'
 import SectionHeader from '@/components/SectionHeader'
 import StatusTag from '@/components/StatusTag'
-import { fieldList, fieldStats } from '@/data/field'
+import { useAppStore } from '@/store'
 import { FieldInfo } from '@/types'
 
 const FieldPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false)
-  const [fields] = useState<FieldInfo[]>(fieldList)
+  const fields = useAppStore(state => state.fields)
+
+  const fieldStats = useMemo(() => {
+    const totalArea = fields.reduce((sum, f) => sum + f.area, 0)
+    const growingCount = fields.filter(f => f.status === 'growing').length
+    const harvestedCount = fields.filter(f => f.status === 'harvested').length
+    const herbTypes = new Set(fields.map(f => f.herbType)).size
+    return [
+      { label: '地块总数', value: fields.length, unit: '块' },
+      { label: '种植面积', value: totalArea, unit: '亩' },
+      { label: '生长中', value: growingCount, unit: '块' },
+      { label: '已采收', value: harvestedCount, unit: '块' },
+    ]
+  }, [fields])
 
   const onRefresh = () => {
     setRefreshing(true)
     setTimeout(() => {
       setRefreshing(false)
-      Taro.showToast({ title: '刷新成功', icon: 'success' })
-    }, 1000)
+    }, 800)
   }
 
   const handleFieldClick = (field: FieldInfo) => {
-    console.log('[Field] 点击地块:', field.name)
-    Taro.showToast({ title: `查看${field.name}详情`, icon: 'none' })
+    Taro.navigateTo({ url: `/pages/field-form/index?mode=edit&id=${field.id}` })
   }
 
   const handleAddField = () => {
-    console.log('[Field] 新增地块')
-    Taro.showToast({ title: '新增地块功能', icon: 'none' })
+    Taro.navigateTo({ url: '/pages/field-form/index?mode=add' })
   }
 
   return (
@@ -99,6 +109,10 @@ const FieldPage: React.FC = () => {
             </View>
           </View>
         ))}
+      </View>
+
+      <View className={styles.fab} onClick={handleAddField}>
+        <Text>+</Text>
       </View>
     </ScrollView>
   )
