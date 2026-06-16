@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { View, Text, ScrollView, RefreshControl } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import StatCard from '@/components/StatCard'
@@ -12,10 +12,21 @@ import { getStatusText } from '@/utils'
 type TabType = 'harvest' | 'process'
 
 const HarvestPage: React.FC = () => {
+  const router = useRouter()
+  const highlightId = router.params.id || ''
+
   const [activeTab, setActiveTab] = useState<TabType>('harvest')
   const [refreshing, setRefreshing] = useState(false)
   const harvestRecords = useAppStore(state => state.harvestRecords)
   const processingRecords = useAppStore(state => state.processingRecords)
+
+  useEffect(() => {
+    if (highlightId) {
+      setTimeout(() => {
+        Taro.showToast({ title: '已定位到对应记录', icon: 'none', duration: 1500 })
+      }, 500)
+    }
+  }, [highlightId])
 
   const stats = useMemo(() => {
     const thisYear = new Date().getFullYear()
@@ -77,7 +88,7 @@ const HarvestPage: React.FC = () => {
         {harvestRecords.map((record: HarvestRecord) => (
           <View
             key={record.id}
-            className={styles.card}
+            className={classnames(styles.card, { [styles.highlightCard]: record.id === highlightId })}
             onClick={() => handleHarvestClick(record)}
           >
             <View className={styles.cardHeader}>

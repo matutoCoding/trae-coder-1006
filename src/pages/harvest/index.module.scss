@@ -283,3 +283,15 @@
   color: $color-text-tertiary;
   margin-left: 4rpx;
 }
+
+.highlightCard {
+  background: #FFF8E1;
+  border: 3rpx solid #F57F17;
+  box-shadow: 0 8rpx 24rpx rgba(245, 127, 23, 0.2);
+  animation: highlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+  0%, 100% { box-shadow: 0 8rpx 24rpx rgba(245, 127, 23, 0.2); }
+  50% { box-shadow: 0 8rpx 32rpx rgba(245, 127, 23, 0.4); }
+}

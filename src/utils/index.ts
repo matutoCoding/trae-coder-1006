@@ -68,3 +68,28 @@ export const getStatusColor = (status: string): string => {
   }
   return colorMap[status] || '#4E5969'
 }
+
+const herbAbbrMap: Record<string, string> = {
+  '人参': 'RS',
+  '三七': 'SQ',
+  '黄精': 'HJ',
+  '白术': 'BZ',
+  '铁皮石斛': 'TP',
+  '天麻': 'TM',
+  '当归': 'DG',
+  '川芎': 'CX',
+  '黄连': 'HL',
+  '川贝': 'CB',
+}
+
+export const generateBatchNo = (harvestDate: string, herbType: string, fieldName: string): string => {
+  const dateStr = harvestDate.replace(/-/g, '')
+  const abbr = herbAbbrMap[herbType] || herbType.substr(0, 2).toUpperCase()
+  const fieldMatch = fieldName.match(/([A-Z]\d+)/)
+  const fieldCode = fieldMatch ? fieldMatch[1] : fieldName.substr(0, 2).toUpperCase()
+  return `${dateStr}-${abbr}-${fieldCode}`
+}
+
+export const getHerbAbbr = (herbType: string): string => {
+  return herbAbbrMap[herbType] || herbType.substr(0, 2).toUpperCase()
+}

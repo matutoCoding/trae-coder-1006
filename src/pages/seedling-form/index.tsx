@@ -6,6 +6,8 @@ import styles from './index.module.scss'
 import { useAppStore } from '@/store'
 import { SeedlingInfo } from '@/types'
 
+const herbOptions = ['人参', '三七', '黄精', '铁皮石斛', '天麻', '当归', '白术', '川芎', '黄连', '川贝']
+
 const statusOptions = [
   { value: 'nursery', label: '育苗中' },
   { value: 'available', label: '可供应' },
@@ -29,13 +31,18 @@ const SeedlingFormPage: React.FC = () => {
   const updateSeedling = useAppStore(state => state.updateSeedling)
   const deleteSeedling = useAppStore(state => state.deleteSeedling)
   const getSeedlingById = useAppStore(state => state.getSeedlingById)
+  const fields = useAppStore(state => state.fields)
+  const fieldNames = fields.map(f => f.name)
 
   const [formData, setFormData] = useState<Partial<SeedlingInfo>>({
     name: '',
     variety: '',
+    herbType: '',
     source: '',
     quantity: 0,
     nurseryDate: '',
+    fieldId: '',
+    fieldName: '',
     status: 'nursery',
     quality: 'good',
   })
@@ -54,6 +61,18 @@ const SeedlingFormPage: React.FC = () => {
 
   const handleInputChange = (key: keyof SeedlingInfo, value: string | number) => {
     setFormData(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleFieldChange = (index: number) => {
+    const field = fields[index]
+    if (field) {
+      setFormData(prev => ({
+        ...prev,
+        fieldId: field.id,
+        fieldName: field.name,
+        herbType: field.herbType || prev.herbType
+      }))
+    }
   }
 
   const handleSubmit = () => {
@@ -121,6 +140,38 @@ const SeedlingFormPage: React.FC = () => {
                 value={formData.variety}
                 onInput={(e) => handleInputChange('variety', e.detail.value)}
               />
+            </View>
+          </View>
+
+          <View className={styles.formItem}>
+            <Text className={styles.formLabel}>药材品种</Text>
+            <View className={styles.formControl}>
+              <Picker
+                mode="selector"
+                range={herbOptions}
+                value={herbOptions.indexOf(formData.herbType || '')}
+                onChange={(e) => handleInputChange('herbType', herbOptions[e.detail.value])}
+              >
+                <Text className={classnames(styles.pickerText, { [styles.placeholder]: !formData.herbType })}>
+                  {formData.herbType || '请选择药材品种'}
+                </Text>
+              </Picker>
+            </View>
+          </View>
+
+          <View className={styles.formItem}>
+            <Text className={styles.formLabel}>对应地块</Text>
+            <View className={styles.formControl}>
+              <Picker
+                mode="selector"
+                range={fieldNames}
+                value={fieldNames.indexOf(formData.fieldName || '')}
+                onChange={(e) => handleFieldChange(e.detail.value)}
+              >
+                <Text className={classnames(styles.pickerText, { [styles.placeholder]: !formData.fieldName })}>
+                  {formData.fieldName || '请选择对应地块'}
+                </Text>
+              </Picker>
             </View>
           </View>
 

@@ -106,8 +106,12 @@ const SeedlingPage: React.FC = () => {
 
             <View className={styles.infoGrid}>
               <View className={styles.infoItem}>
-                <Text className={styles.infoLabel}>来源</Text>
-                <Text className={styles.infoValue}>{seedling.source}</Text>
+                <Text className={styles.infoLabel}>药材品种</Text>
+                <Text className={styles.infoValue}>{seedling.herbType || '-'}</Text>
+              </View>
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>对应地块</Text>
+                <Text className={styles.infoValue}>{seedling.fieldName || '-'}</Text>
               </View>
               <View className={styles.infoItem}>
                 <Text className={styles.infoLabel}>数量</Text>

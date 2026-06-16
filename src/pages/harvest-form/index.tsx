@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView, Input, Picker } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import { useAppStore } from '@/store'
 import { HarvestRecord } from '@/types'
+import { generateBatchNo } from '@/utils'
 
 const qualityOptions = [
   { value: 'excellent', label: '优等' },
@@ -47,6 +48,13 @@ const HarvestFormPage: React.FC = () => {
 
   const fieldNames = fields.map(f => f.name)
 
+  const previewBatchNo = useMemo(() => {
+    if (formData.harvestDate && formData.herbType && formData.fieldName) {
+      return generateBatchNo(formData.harvestDate, formData.herbType, formData.fieldName)
+    }
+    return ''
+  }, [formData.harvestDate, formData.herbType, formData.fieldName])
+
   useEffect(() => {
     if (mode === 'edit' && id) {
       const record = getHarvestRecordById(id)
@@ -83,7 +91,13 @@ const HarvestFormPage: React.FC = () => {
     }
 
     if (mode === 'add') {
-      addHarvestRecord(formData as Omit<HarvestRecord, 'id'>)
+      const batchNo = previewBatchNo || generateBatchNo(
+        formData.harvestDate || new Date().toISOString().split('T')[0],
+        formData.herbType || '',
+        formData.fieldName || ''
+      )
+      const dataToSave = { ...formData, batchNo }
+      addHarvestRecord(dataToSave as Omit<HarvestRecord, 'id'>)
       Taro.showToast({ title: '添加成功', icon: 'success' })
     } else {
       updateHarvestRecord(id, formData)
@@ -135,6 +149,18 @@ const HarvestFormPage: React.FC = () => {
               </Picker>
             </View>
           </View>
+
+          {previewBatchNo && (
+            <View className={styles.formItem}>
+              <Text className={styles.formLabel}>批次号</Text>
+              <View className={styles.formControl}>
+                <View className={styles.batchNoBox}>
+                  <Text className={styles.batchNoText}>{previewBatchNo}</Text>
+                  <Text className={styles.batchNoHint}>系统自动生成</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
           <View className={styles.formItem}>
             <Text className={styles.formLabel}>药材品种</Text>

@@ -11,7 +11,9 @@ import {
   OrderInfo,
   SalesRecord,
   ProcessingRecord,
-  InventoryBatch
+  InventoryBatch,
+  InventoryFlow,
+  StockFlowType
 } from '@/types'
 import { fieldList } from '@/data/field'
 import { seedlingList } from '@/data/seedling'
@@ -65,6 +67,10 @@ interface AppState {
   orders: OrderInfo[]
   salesRecords: SalesRecord[]
   inventoryBatches: InventoryBatch[]
+  inventoryFlows: InventoryFlow[]
+
+  addInventoryFlow: (flow: Omit<InventoryFlow, 'id' | 'operateTime'>) => void
+  getFlowsByBatchNo: (batchNo: string) => InventoryFlow[]
 
   addField: (field: Omit<FieldInfo, 'id'>) => void
   updateField: (id: string, field: Partial<FieldInfo>) => void
@@ -102,9 +108,9 @@ interface AppState {
 
   addInventoryBatch: (batch: Omit<InventoryBatch, 'id' | 'status'>) => void
   updateInventoryBatch: (id: string, batch: Partial<InventoryBatch>) => void
-  reserveStock: (batchNo: string, qty: number) => boolean
-  releaseReserve: (batchNo: string, qty: number) => boolean
-  deductStock: (batchNo: string, qty: number) => boolean
+  reserveStock: (batchNo: string, qty: number, remark?: string) => boolean
+  releaseReserve: (batchNo: string, qty: number, remark?: string) => boolean
+  deductStock: (batchNo: string, qty: number, remark?: string) => boolean
   getInventoryByBatchNo: (batchNo: string) => InventoryBatch | undefined
 
   getFieldById: (id: string) => FieldInfo | undefined
@@ -156,6 +162,61 @@ const calcInventoryStatus = (available: number, total: number): 'in_stock' | 'lo
   return 'in_stock'
 }
 
+const initialInventoryFlows: InventoryFlow[] = [
+  {
+    id: 'flow-1',
+    batchNo: '20240510-TM-C2',
+    herbType: '天麻',
+    type: 'in',
+    quantity: 1500,
+    unit: 'kg',
+    beforeQty: { total: 0, available: 0, reserved: 0 },
+    afterQty: { total: 1500, available: 1500, reserved: 0 },
+    operator: '张师傅',
+    operateTime: '2024-05-15 10:30',
+    remark: '采收加工入库'
+  },
+  {
+    id: 'flow-2',
+    batchNo: '20240510-TM-C2',
+    herbType: '天麻',
+    type: 'reserve',
+    quantity: 200,
+    unit: 'kg',
+    beforeQty: { total: 1500, available: 1500, reserved: 0 },
+    afterQty: { total: 1500, available: 1300, reserved: 200 },
+    operator: '系统',
+    operateTime: '2024-06-05 09:00',
+    remark: '订单预留：同仁堂药业 DD20240605002'
+  },
+  {
+    id: 'flow-3',
+    batchNo: '20240710-TP-C1',
+    herbType: '铁皮石斛',
+    type: 'in',
+    quantity: 200,
+    unit: 'kg',
+    beforeQty: { total: 0, available: 0, reserved: 0 },
+    afterQty: { total: 200, available: 200, reserved: 0 },
+    operator: '李师傅',
+    operateTime: '2024-07-15 14:20',
+    remark: '采收加工入库'
+  },
+  {
+    id: 'flow-4',
+    batchNo: '20240710-TP-C1',
+    herbType: '铁皮石斛',
+    type: 'deduct',
+    quantity: 100,
+    unit: 'kg',
+    beforeQty: { total: 200, available: 200, reserved: 0 },
+    afterQty: { total: 100, available: 100, reserved: 0 },
+    operator: '系统',
+    operateTime: '2024-07-05 16:00',
+    remark: '订单发货扣减：康美药业 DD20240528003'
+  }
+]
+
 const initialState = {
   fields: fieldList,
   seedlings: seedlingList,
@@ -168,6 +229,7 @@ const initialState = {
   orders: orderList,
   salesRecords: salesRecordList,
   inventoryBatches: initialInventory,
+  inventoryFlows: initialInventoryFlows,
 }
 
 export const useAppStore = create<AppState>()(
@@ -237,13 +299,30 @@ export const useAppStore = create<AppState>()(
               fieldName: fieldInfo?.name || record.fieldName || '',
               remark: '采收加工自动入库'
             }
+            const invBatch = {
+              ...newInventory,
+              id: generateId(),
+              status: calcInventoryStatus(newInventory.availableQty, newInventory.totalQty)
+            }
+            const newFlow: Omit<InventoryFlow, 'id' | 'operateTime'> = {
+              batchNo: record.batchNo,
+              herbType: record.herbType,
+              type: 'in',
+              quantity: record.yield,
+              unit: record.unit,
+              beforeQty: { total: 0, available: 0, reserved: 0 },
+              afterQty: { total: record.yield, available: record.yield, reserved: 0 },
+              operator: record.operator || '系统',
+              remark: '采收加工入库'
+            }
             set({
               harvestRecords: [newRecord, ...state.harvestRecords],
-              inventoryBatches: [{
-                ...newInventory,
+              inventoryBatches: [invBatch, ...state.inventoryBatches],
+              inventoryFlows: [{
+                ...newFlow,
                 id: generateId(),
-                status: calcInventoryStatus(newInventory.availableQty, newInventory.totalQty)
-              }, ...state.inventoryBatches]
+                operateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+              }, ...state.inventoryFlows]
             })
             return
           }
@@ -311,18 +390,7 @@ export const useAppStore = create<AppState>()(
         const state = get()
         const order = state.orders.find(o => o.id === id)
         if (order && order.batchNo && (order.status === 'producing')) {
-          set({
-            inventoryBatches: state.inventoryBatches.map(i =>
-              i.batchNo === order.batchNo
-                ? {
-                    ...i,
-                    availableQty: i.availableQty + order.quantity,
-                    reservedQty: Math.max(0, i.reservedQty - order.quantity),
-                    status: calcInventoryStatus(i.availableQty + order.quantity, i.totalQty)
-                  }
-                : i
-            )
-          })
+          get().releaseReserve(order.batchNo, order.quantity, `订单删除释放：${order.customer} ${order.orderNo}`)
         }
         set({
           orders: state.orders.filter(o => o.id !== id),
@@ -339,42 +407,11 @@ export const useAppStore = create<AppState>()(
           if (!inv || inv.availableQty < order.quantity) {
             return false
           }
-          set({
-            inventoryBatches: state.inventoryBatches.map(i =>
-              i.batchNo === order.batchNo
-                ? {
-                    ...i,
-                    availableQty: i.availableQty - order.quantity,
-                    reservedQty: i.reservedQty + order.quantity,
-                    status: calcInventoryStatus(i.availableQty - order.quantity, i.totalQty)
-                  }
-                : i
-            )
-          })
+          get().reserveStock(order.batchNo, order.quantity, `订单预留：${order.customer} ${order.orderNo}`)
         }
 
         if (status === 'completed' && order.batchNo && (order.status === 'shipped' || order.status === 'producing')) {
-          const stateAfter = get()
-          const inv = stateAfter.inventoryBatches.find(i => i.batchNo === order.batchNo)
-          if (inv) {
-            const fromReserve = Math.min(order.quantity, inv.reservedQty)
-            const fromAvailable = order.quantity - fromReserve
-            const newTotal = inv.totalQty - order.quantity
-            const newAvailable = inv.availableQty - fromAvailable
-            set({
-              inventoryBatches: stateAfter.inventoryBatches.map(i =>
-                i.batchNo === order.batchNo
-                  ? {
-                      ...i,
-                      totalQty: newTotal,
-                      availableQty: newAvailable,
-                      reservedQty: inv.reservedQty - fromReserve,
-                      status: calcInventoryStatus(newAvailable, newTotal)
-                    }
-                  : i
-              )
-            })
-          }
+          get().deductStock(order.batchNo, order.quantity, `订单发货扣减：${order.customer} ${order.orderNo}`)
 
           const stateAfterInv = get()
           const saleId = `sale-${order.id}`
@@ -397,19 +434,7 @@ export const useAppStore = create<AppState>()(
         }
 
         if ((status === 'cancelled') && order.batchNo && (order.status === 'producing' || order.status === 'shipped')) {
-          const stateAfter = get()
-          set({
-            inventoryBatches: stateAfter.inventoryBatches.map(i =>
-              i.batchNo === order.batchNo
-                ? {
-                    ...i,
-                    availableQty: i.availableQty + order.quantity,
-                    reservedQty: Math.max(0, i.reservedQty - order.quantity),
-                    status: calcInventoryStatus(i.availableQty + order.quantity, i.totalQty)
-                  }
-                : i
-            )
-          })
+          get().releaseReserve(order.batchNo, order.quantity, `订单取消释放：${order.customer} ${order.orderNo}`)
         }
 
         const finalState = get()
@@ -434,10 +459,13 @@ export const useAppStore = create<AppState>()(
       updateInventoryBatch: (id, batch) => set((state) => ({
         inventoryBatches: state.inventoryBatches.map(i => i.id === id ? { ...i, ...batch } : i)
       })),
-      reserveStock: (batchNo, qty) => {
+      reserveStock: (batchNo, qty, remark?: string) => {
         const state = get()
         const inv = state.inventoryBatches.find(i => i.batchNo === batchNo)
         if (!inv || inv.availableQty < qty) return false
+
+        const beforeQty = { total: inv.totalQty, available: inv.availableQty, reserved: inv.reservedQty }
+        const afterQty = { total: inv.totalQty, available: inv.availableQty - qty, reserved: inv.reservedQty + qty }
 
         set({
           inventoryBatches: state.inventoryBatches.map(i =>
@@ -449,14 +477,30 @@ export const useAppStore = create<AppState>()(
                   status: calcInventoryStatus(i.availableQty - qty, i.totalQty)
                 }
               : i
-          )
+          ),
+          inventoryFlows: [{
+            id: generateId(),
+            batchNo,
+            herbType: inv.herbType,
+            type: 'reserve',
+            quantity: qty,
+            unit: inv.unit,
+            beforeQty,
+            afterQty,
+            operator: '系统',
+            operateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
+            remark: remark || '订单预留'
+          }, ...state.inventoryFlows]
         })
         return true
       },
-      releaseReserve: (batchNo, qty) => {
+      releaseReserve: (batchNo, qty, remark?: string) => {
         const state = get()
         const inv = state.inventoryBatches.find(i => i.batchNo === batchNo)
         if (!inv || inv.reservedQty < qty) return false
+
+        const beforeQty = { total: inv.totalQty, available: inv.availableQty, reserved: inv.reservedQty }
+        const afterQty = { total: inv.totalQty, available: inv.availableQty + qty, reserved: Math.max(0, inv.reservedQty - qty) }
 
         set({
           inventoryBatches: state.inventoryBatches.map(i =>
@@ -468,30 +512,62 @@ export const useAppStore = create<AppState>()(
                   status: calcInventoryStatus(i.availableQty + qty, i.totalQty)
                 }
               : i
-          )
+          ),
+          inventoryFlows: [{
+            id: generateId(),
+            batchNo,
+            herbType: inv.herbType,
+            type: 'release',
+            quantity: qty,
+            unit: inv.unit,
+            beforeQty,
+            afterQty,
+            operator: '系统',
+            operateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
+            remark: remark || '订单取消释放'
+          }, ...state.inventoryFlows]
         })
         return true
       },
-      deductStock: (batchNo, qty) => {
+      deductStock: (batchNo, qty, remark?: string) => {
         const state = get()
         const inv = state.inventoryBatches.find(i => i.batchNo === batchNo)
         if (!inv || inv.availableQty + inv.reservedQty < qty) return false
 
         const fromReserve = Math.min(qty, inv.reservedQty)
         const fromAvailable = qty - fromReserve
+        const newTotal = inv.totalQty - qty
+        const newAvailable = inv.availableQty - fromAvailable
+        const newReserved = inv.reservedQty - fromReserve
+
+        const beforeQty = { total: inv.totalQty, available: inv.availableQty, reserved: inv.reservedQty }
+        const afterQty = { total: newTotal, available: newAvailable, reserved: newReserved }
 
         set({
           inventoryBatches: state.inventoryBatches.map(i =>
             i.batchNo === batchNo
               ? {
                   ...i,
-                  totalQty: i.totalQty - qty,
-                  availableQty: i.availableQty - fromAvailable,
-                  reservedQty: i.reservedQty - fromReserve,
-                  status: calcInventoryStatus(i.availableQty - fromAvailable, i.totalQty - qty)
+                  totalQty: newTotal,
+                  availableQty: newAvailable,
+                  reservedQty: newReserved,
+                  status: calcInventoryStatus(newAvailable, newTotal)
                 }
               : i
-          )
+          ),
+          inventoryFlows: [{
+            id: generateId(),
+            batchNo,
+            herbType: inv.herbType,
+            type: 'deduct',
+            quantity: qty,
+            unit: inv.unit,
+            beforeQty,
+            afterQty,
+            operator: '系统',
+            operateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
+            remark: remark || '订单发货扣减'
+          }, ...state.inventoryFlows]
         })
         return true
       },
@@ -512,6 +588,15 @@ export const useAppStore = create<AppState>()(
       getQualityTestByBatchNo: (batchNo) => get().qualityTests.find(t => t.batchNo === batchNo),
       getOrdersByBatchNo: (batchNo) => get().orders.filter(o => o.batchNo === batchNo),
       getProcessingByBatchNo: (batchNo) => get().processingRecords.filter(p => p.batchNo === batchNo),
+
+      addInventoryFlow: (flow) => set((state) => ({
+        inventoryFlows: [{
+          ...flow,
+          id: generateId(),
+          operateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        }, ...state.inventoryFlows]
+      })),
+      getFlowsByBatchNo: (batchNo) => get().inventoryFlows.filter(f => f.batchNo === batchNo),
 
       resetAll: () => set(initialState),
     }),

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView, Input, Picker } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import { useAppStore } from '@/store'
-import { QualityTest, TestItem } from '@/types'
+import { QualityTest, TestItem, InventoryBatch } from '@/types'
 
 const herbOptions = ['人参', '三七', '天麻', '黄精', '铁皮石斛', '当归', '白术', '其他']
 const resultOptions = [
@@ -16,7 +16,7 @@ const resultOptions = [
 const defaultTestItems: TestItem[] = [
   { name: '有机磷农药残留', category: 'pesticide', result: '未检出', standard: '≤0.05mg/kg', isPass: true },
   { name: '拟除虫菊酯', category: 'pesticide', result: '未检出', standard: '≤0.1mg/kg', isPass: true },
-  { name: '铅(Pb', category: 'heavyMetal', result: '0.3mg/kg', standard: '≤5.0mg/kg', isPass: true },
+  { name: '铅(Pb)', category: 'heavyMetal', result: '0.3mg/kg', standard: '≤5.0mg/kg', isPass: true },
   { name: '镉(Cd)', category: 'heavyMetal', result: '0.05mg/kg', standard: '≤0.3mg/kg', isPass: true },
   { name: '砷(As)', category: 'heavyMetal', result: '0.2mg/kg', standard: '≤2.0mg/kg', isPass: true },
   { name: '汞(Hg)', category: 'heavyMetal', result: '0.01mg/kg', standard: '≤0.2mg/kg', isPass: true },
@@ -38,6 +38,43 @@ const QualityFormPage: React.FC = () => {
   const updateQualityTest = useAppStore(state => state.updateQualityTest)
   const deleteQualityTest = useAppStore(state => state.deleteQualityTest)
   const getQualityTestById = useAppStore(state => state.getQualityTestById)
+  const inventoryBatches = useAppStore(state => state.inventoryBatches)
+  const harvestRecords = useAppStore(state => state.harvestRecords)
+
+  const batchOptions = useMemo(() => {
+    const harvestBatchNos = harvestRecords.filter(h => h.yield > 0).map(h => ({
+      batchNo: h.batchNo,
+      herbType: h.herbType,
+      fieldName: h.fieldName,
+      quantity: h.yield,
+      unit: h.unit,
+      quality: h.quality,
+      date: h.harvestDate,
+      source: 'harvest',
+      label: `${h.batchNo} | ${h.herbType} | ${h.fieldName} (采收)`
+    }))
+    const invBatchNos = inventoryBatches.map(inv => ({
+      batchNo: inv.batchNo,
+      herbType: inv.herbType,
+      fieldName: inv.fieldName,
+      quantity: inv.availableQty,
+      unit: inv.unit,
+      quality: inv.quality,
+      date: inv.warehouseDate,
+      source: 'inventory',
+      label: `${inv.batchNo} | ${inv.herbType} | ${inv.fieldName} (库存可售${inv.availableQty}${inv.unit})`
+    }))
+    const merged = new Map()
+    invBatchNos.forEach(b => merged.set(b.batchNo, b))
+    harvestBatchNos.forEach(b => { if (!merged.has(b.batchNo)) merged.set(b.batchNo, b) })
+    return Array.from(merged.values())
+  }, [inventoryBatches, harvestRecords])
+
+  const batchLabels = batchOptions.map(b => b.label)
+
+  const selectedBatch = useMemo(() => {
+    return formData.batchNo ? batchOptions.find(b => b.batchNo === formData.batchNo) : undefined
+  }, [formData.batchNo, batchOptions])
 
   const [formData, setFormData] = useState<Partial<QualityTest>>({
     batchNo: '',
@@ -65,10 +102,8 @@ const QualityFormPage: React.FC = () => {
         if (rIdx >= 0) setResultIndex(rIdx)
       }
     } else {
-      const batchNo = `JC${Date.now().toString().slice(-8)}`
       setFormData(prev => ({
         ...prev,
-        batchNo,
         testDate: today,
       }))
       Taro.setNavigationBarTitle({ title: '新增检测' })
@@ -90,6 +125,20 @@ const QualityFormPage: React.FC = () => {
     setResultIndex(idx)
     const result = resultOptions[idx].value as 'pass' | 'fail' | 'pending'
     setFormData(prev => ({ ...prev, overallResult: result }))
+  }
+
+  const handleBatchChange = (e: any) => {
+    const idx = Number(e.detail.value)
+    const batch = batchOptions[idx]
+    if (batch) {
+      setFormData(prev => ({
+        ...prev,
+        batchNo: batch.batchNo,
+        herbType: prev.herbType || batch.herbType,
+      }))
+      const hIdx = herbOptions.indexOf(batch.herbType)
+      if (hIdx >= 0) setHerbIndex(hIdx)
+    }
   }
 
   const handleSubmit = () => {
@@ -149,16 +198,64 @@ const QualityFormPage: React.FC = () => {
         <Text className={styles.sectionTitle}>基本信息</Text>
 
         <View className={styles.formItem}>
-          <Text className={styles.label}>批次号</Text>
+          <Text className={styles.label}>关联批次</Text>
           <View className={styles.inputWrap}>
-            <Input
-              className={styles.input}
-              placeholder="请输入批次号"
-              value={formData.batchNo}
-              onInput={(e) => handleInputChange('batchNo', e.detail.value)}
-            />
+            <Picker
+              mode="selector"
+              range={batchLabels}
+              value={formData.batchNo ? batchOptions.findIndex(b => b.batchNo === formData.batchNo) : 0}
+              onChange={handleBatchChange}
+            >
+              <Text className={classnames(styles.pickerText, {
+                [styles.placeholder]: !formData.batchNo
+              })}>
+                {formData.batchNo || '请选择采收/库存批次'}
+              </Text>
+            </Picker>
           </View>
         </View>
+
+        {selectedBatch && (
+          <View className={styles.batchInfo}>
+            <Text className={styles.batchTitle}>🌿 批次信息</Text>
+            <View className={styles.batchGrid}>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>药材品种</Text>
+                <Text className={styles.batchValue}>{selectedBatch.herbType}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>对应地块</Text>
+                <Text className={styles.batchValue}>{selectedBatch.fieldName}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>
+                  {selectedBatch.source === 'inventory' ? '可售数量' : '采收产量'}
+                </Text>
+                <Text className={classnames(styles.batchValue, styles.availQty)}>
+                  {selectedBatch.quantity}{selectedBatch.unit}
+                </Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>品质等级</Text>
+                <Text className={styles.batchValue}>
+                  {selectedBatch.quality === 'excellent' ? '优等' : selectedBatch.quality === 'good' ? '良好' : '一般'}
+                </Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>
+                  {selectedBatch.source === 'inventory' ? '入库日期' : '采收日期'}
+                </Text>
+                <Text className={styles.batchValue}>{selectedBatch.date}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>数据来源</Text>
+                <Text className={styles.batchValue}>
+                  {selectedBatch.source === 'inventory' ? '库存批次' : '采收记录'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View className={styles.formItem}>
           <Text className={styles.label}>药材品种</Text>

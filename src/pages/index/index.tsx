@@ -40,6 +40,10 @@ const IndexPage: React.FC = () => {
 
   const todoList = useMemo<TodoItem[]>(() => {
     const todos: TodoItem[] = []
+    const today = new Date()
+    const sevenDaysLater = new Date()
+    sevenDaysLater.setDate(today.getDate() + 7)
+    const toDateNum = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '')
 
     const pendingHarvest = harvestRecords.filter(h => h.processingStatus !== 'finished' && h.processingStatus !== 'sliced' && h.yield > 0)
     pendingHarvest.forEach(h => {
@@ -49,19 +53,25 @@ const IndexPage: React.FC = () => {
         title: '采收待加工',
         desc: `${h.herbType} 批次 ${h.batchNo}，产量 ${h.yield}${h.unit}`,
         type: 'info',
-        route: '/pages/harvest/index'
+        route: `/pages/harvest/index?id=${h.id}`
       })
     })
 
-    const rawHarvest = harvestRecords.filter(h => h.yield === 0)
-    rawHarvest.forEach(h => {
+    const nearHarvest = harvestRecords.filter(h => {
+      if (h.yield > 0) return false
+      const hDate = h.harvestDate.replace(/-/g, '')
+      const todayNum = toDateNum(today)
+      const weekNum = toDateNum(sevenDaysLater)
+      return hDate >= todayNum && hDate <= weekNum
+    })
+    nearHarvest.forEach(h => {
       todos.push({
         id: `rawharvest-${h.id}`,
         icon: '🌱',
         title: '临近采收期',
         desc: `${h.herbType} ${h.fieldName}，预计 ${h.harvestDate} 采收`,
         type: 'warning',
-        route: '/pages/harvest/index'
+        route: `/pages/harvest/index?id=${h.id}`
       })
     })
 

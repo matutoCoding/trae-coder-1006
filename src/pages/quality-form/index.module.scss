@@ -119,3 +119,48 @@
   border: 2rpx solid #ffcccc;
   margin-top: 24rpx;
 }
+
+.batchInfo {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  background: #E3F2FD;
+  border-radius: 16rpx;
+  border: 2rpx solid #90CAF9;
+}
+
+.batchTitle {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1565C0;
+  margin-bottom: 16rpx;
+}
+
+.batchGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.batchItem {
+  width: 48%;
+  flex: 1 1 45%;
+}
+
+.batchLabel {
+  font-size: 22rpx;
+  color: #1976D2;
+  margin-bottom: 4rpx;
+  display: block;
+}
+
+.batchValue {
+  font-size: 26rpx;
+  color: #0D47A1;
+  font-weight: 500;
+  display: block;
+
+  &.availQty {
+    color: #00B42A;
+    font-weight: 600;
+  }
+}

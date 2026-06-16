@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView, Input, Picker } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
 import styles from './index.module.scss'
 import { useAppStore } from '@/store'
-import { OrderInfo } from '@/types'
+import { OrderInfo, InventoryBatch } from '@/types'
 
 const herbOptions = ['人参', '三七', '天麻', '黄精', '铁皮石斛', '当归', '白术', '其他']
 const unitOptions = ['kg', 'g', '株', '箱']
@@ -18,7 +18,23 @@ const OrderFormPage: React.FC = () => {
   const updateOrder = useAppStore(state => state.updateOrder)
   const deleteOrder = useAppStore(state => state.deleteOrder)
   const getOrderById = useAppStore(state => state.getOrderById)
+  const inventoryBatches = useAppStore(state => state.inventoryBatches)
   const harvestRecords = useAppStore(state => state.harvestRecords)
+  const getQualityTestByBatchNo = useAppStore(state => state.getQualityTestByBatchNo)
+
+  const batchOptions = useMemo(() => {
+    return inventoryBatches.map(inv => ({
+      ...inv,
+      qualityTest: getQualityTestByBatchNo(inv.batchNo),
+      label: `${inv.batchNo} | ${inv.herbType} | 可售${inv.availableQty}${inv.unit}`
+    }))
+  }, [inventoryBatches, getQualityTestByBatchNo])
+
+  const batchLabels = batchOptions.map(b => b.label)
+
+  const selectedBatch = useMemo<InventoryBatch | undefined>(() => {
+    return formData.batchNo ? batchOptions.find(b => b.batchNo === formData.batchNo) : undefined
+  }, [formData.batchNo, batchOptions])
 
   const [formData, setFormData] = useState<Partial<OrderInfo>>({
     orderNo: '',
@@ -80,6 +96,23 @@ const OrderFormPage: React.FC = () => {
     const idx = Number(e.detail.value)
     setUnitIndex(idx)
     setFormData(prev => ({ ...prev, unit: unitOptions[idx] }))
+  }
+
+  const handleBatchChange = (e: any) => {
+    const idx = Number(e.detail.value)
+    const batch = batchOptions[idx]
+    if (batch) {
+      setFormData(prev => ({
+        ...prev,
+        batchNo: batch.batchNo,
+        herbType: prev.herbType || batch.herbType,
+        unit: prev.unit || batch.unit,
+      }))
+      const hIdx = herbOptions.indexOf(batch.herbType)
+      if (hIdx >= 0) setHerbIndex(hIdx)
+      const uIdx = unitOptions.indexOf(batch.unit)
+      if (uIdx >= 0) setUnitIndex(uIdx)
+    }
   }
 
   const handleSubmit = () => {
@@ -245,14 +278,56 @@ const OrderFormPage: React.FC = () => {
         <View className={styles.formItem}>
           <Text className={styles.label}>关联批次</Text>
           <View className={styles.inputWrap}>
-            <Input
-              className={styles.input}
-              placeholder="可选，关联采收批次"
-              value={formData.batchNo}
-              onInput={(e) => handleInputChange('batchNo', e.detail.value)}
-            />
+            <Picker
+              mode="selector"
+              range={batchLabels}
+              value={formData.batchNo ? batchOptions.findIndex(b => b.batchNo === formData.batchNo) : 0}
+              onChange={handleBatchChange}
+            >
+              <Text className={classnames(styles.pickerText, {
+                [styles.placeholder]: !formData.batchNo
+              })}>
+                {formData.batchNo || '请选择库存批次'}
+              </Text>
+            </Picker>
           </View>
         </View>
+
+        {selectedBatch && (
+          <View className={styles.batchInfo}>
+            <Text className={styles.batchTitle}>📦 批次信息</Text>
+            <View className={styles.batchGrid}>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>药材品种</Text>
+                <Text className={styles.batchValue}>{selectedBatch.herbType}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>对应地块</Text>
+                <Text className={styles.batchValue}>{selectedBatch.fieldName}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>可售数量</Text>
+                <Text className={classnames(styles.batchValue, styles.availQty)}>
+                  {selectedBatch.availableQty}{selectedBatch.unit}
+                </Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>已预留</Text>
+                <Text className={styles.batchValue}>{selectedBatch.reservedQty}{selectedBatch.unit}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>入库日期</Text>
+                <Text className={styles.batchValue}>{selectedBatch.warehouseDate}</Text>
+              </View>
+              <View className={styles.batchItem}>
+                <Text className={styles.batchLabel}>品质等级</Text>
+                <Text className={styles.batchValue}>
+                  {selectedBatch.quality === 'excellent' ? '优等' : selectedBatch.quality === 'good' ? '良好' : '一般'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       <View className={styles.formSection}>

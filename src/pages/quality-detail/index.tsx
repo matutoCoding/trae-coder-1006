@@ -18,6 +18,7 @@ const QualityDetailPage: React.FC = () => {
   const getInventoryByBatchNo = useAppStore(state => state.getInventoryByBatchNo)
   const getFieldById = useAppStore(state => state.getFieldById)
   const getSeedlingByFieldId = useAppStore(state => state.getSeedlingByFieldId)
+  const getFlowsByBatchNo = useAppStore(state => state.getFlowsByBatchNo)
   const farmRecords = useAppStore(state => state.farmRecords)
   const pestRecords = useAppStore(state => state.pestRecords)
 
@@ -49,6 +50,8 @@ const QualityDetailPage: React.FC = () => {
       ? pestRecords.filter(r => r.fieldId === harvestRecord.fieldId)
       : []
 
+    const flows = test ? getFlowsByBatchNo(test.batchNo) : []
+
     return {
       harvestRecord,
       processingRecords,
@@ -58,8 +61,9 @@ const QualityDetailPage: React.FC = () => {
       seedlingInfo,
       fieldFarmRecords,
       fieldPestRecords,
+      flows,
     }
-  }, [test, getHarvestByBatchNo, getProcessingByBatchNo, getOrdersByBatchNo, getInventoryByBatchNo, getFieldById, getSeedlingByFieldId, farmRecords, pestRecords])
+  }, [test, getHarvestByBatchNo, getProcessingByBatchNo, getOrdersByBatchNo, getInventoryByBatchNo, getFieldById, getSeedlingByFieldId, getFlowsByBatchNo, farmRecords, pestRecords])
 
   if (!test) {
     return (
@@ -242,6 +246,47 @@ const QualityDetailPage: React.FC = () => {
           ))}
         </View>
       </View>
+
+      {batchData?.flows && batchData.flows.length > 0 && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>📦 出入库流水</Text>
+          <View className={styles.flowList}>
+            {batchData.flows.map(flow => (
+              <View key={flow.id} className={styles.flowItem}>
+                <View className={classnames(styles.flowIcon, styles[`flow-${flow.type}`])}>
+                  {flow.type === 'in' && '⬇️'}
+                  {flow.type === 'reserve' && '🔒'}
+                  {flow.type === 'release' && '🔓'}
+                  {flow.type === 'deduct' && '⬆️'}
+                  {flow.type === 'adjust' && '🔄'}
+                </View>
+                <View className={styles.flowContent}>
+                  <View className={styles.flowTop}>
+                    <Text className={styles.flowType}>
+                      {flow.type === 'in' && '采收入库'}
+                      {flow.type === 'reserve' && '订单预留'}
+                      {flow.type === 'release' && '库存释放'}
+                      {flow.type === 'deduct' && '发货扣减'}
+                      {flow.type === 'adjust' && '库存调整'}
+                    </Text>
+                    <Text className={styles.flowTime}>{flow.operateTime}</Text>
+                  </View>
+                  <Text className={styles.flowRemark}>{flow.remark}</Text>
+                  <View className={styles.flowQty}>
+                    <Text className={classnames(styles.flowDelta, styles[`flow-delta-${flow.type}`])}>
+                      {flow.type === 'in' ? '+' : flow.type === 'release' ? '+' : '-'}
+                      {flow.quantity}{flow.unit}
+                    </Text>
+                    <Text className={styles.flowAfter}>
+                      余 {flow.afterQty.available}{flow.unit} / 总 {flow.afterQty.total}{flow.unit}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       {test.remark && (
         <View className={styles.section}>

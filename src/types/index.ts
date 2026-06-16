@@ -141,6 +141,23 @@ export interface InventoryBatch {
   remark?: string
 }
 
+export type StockFlowType = 'in' | 'reserve' | 'release' | 'deduct' | 'adjust'
+
+export interface InventoryFlow {
+  id: string
+  batchNo: string
+  herbType: string
+  type: StockFlowType
+  quantity: number
+  unit: string
+  beforeQty: { total: number; available: number; reserved: number }
+  afterQty: { total: number; available: number; reserved: number }
+  operator: string
+  operateTime: string
+  remark?: string
+  relatedId?: string
+}
+
 export interface StatItem {
   label: string
   value: string | number
